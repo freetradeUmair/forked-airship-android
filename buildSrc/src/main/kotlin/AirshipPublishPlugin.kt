@@ -69,12 +69,12 @@ class AirshipPublishPlugin : Plugin<Project> {
         configure<PublishingExtension> {
             publications {
                 register<MavenPublication>("Production") {
-                    groupId = "com.github.freetradeUmair"
+                    groupId = project.group.toString()
                     artifactId = project.name
                     version = project.version.toString()
 
-//                    artifact("$buildDir/outputs/aar/${project.name}-release.aar")
-//                    artifact(sourcesJar.get())
+                    artifact("$buildDir/outputs/aar/${project.name}-release.aar")
+                    artifact(sourcesJar.get())
 
                     pom {
                         name.set(project.name)
