@@ -5,7 +5,7 @@ package com.urbanairship.iam;
 import android.os.Bundle;
 
 import com.urbanairship.Autopilot;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.activity.ThemedActivity;
 import com.urbanairship.iam.assets.Assets;
 
@@ -63,7 +63,7 @@ public abstract class InAppMessageActivity extends ThemedActivity {
         assets = getIntent().getParcelableExtra(IN_APP_ASSETS);
 
         if (displayHandler == null || inAppMessage == null) {
-            UALog.e("%s unable to show message. Missing display handler or in-app message", getClass());
+            Logger.error("%s unable to show message. Missing display handler or in-app message", getClass());
             finish();
             return;
         }

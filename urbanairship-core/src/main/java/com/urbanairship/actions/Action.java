@@ -2,7 +2,7 @@
 
 package com.urbanairship.actions;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -101,11 +101,11 @@ public abstract class Action {
     final ActionResult run(@NonNull ActionArguments arguments) {
         try {
             if (!acceptsArguments(arguments)) {
-                UALog.d("Action %s is unable to accept arguments: %s", this, arguments);
+                Logger.debug("Action %s is unable to accept arguments: %s", this, arguments);
                 return ActionResult.newEmptyResultWithStatus(ActionResult.STATUS_REJECTED_ARGUMENTS);
             }
 
-            UALog.i("Running action: %s arguments: %s", this, arguments);
+            Logger.info("Running action: %s arguments: %s", this, arguments);
             onStart(arguments);
             ActionResult result = perform(arguments);
 
@@ -117,7 +117,7 @@ public abstract class Action {
             onFinish(arguments, result);
             return result;
         } catch (Exception e) {
-            UALog.e(e, "Failed to run action %s", this);
+            Logger.error(e, "Failed to run action %s", this);
             return ActionResult.newErrorResult(e);
         }
     }

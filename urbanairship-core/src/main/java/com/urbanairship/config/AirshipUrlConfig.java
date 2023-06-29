@@ -19,12 +19,16 @@ public class AirshipUrlConfig {
     private final String analyticsUrl;
     private final String walletUrl;
     private final String remoteDataUrl;
+    private final String chatUrl;
+    private final String chatSocketUrl;
 
     private AirshipUrlConfig(Builder builder) {
         this.deviceUrl = builder.deviceUrl;
         this.analyticsUrl = builder.analyticsUrl;
         this.walletUrl = builder.walletUrl;
         this.remoteDataUrl = builder.remoteDataUrl;
+        this.chatUrl = builder.chatUrl;
+        this.chatSocketUrl = builder.chatSocketUrl;
     }
 
     /**
@@ -88,11 +92,39 @@ public class AirshipUrlConfig {
     }
 
     /**
-     * Checks if the deviceUrl is configured or not.
+     * Returns a new chat URL builder.
+     *
+     * @return A URL builder.
+     */
+    @NonNull
+    public UrlBuilder chatUrl() {
+        return new UrlBuilder(chatUrl);
+    }
+
+    /**
+     * Checks if the chatUrl is configured or not.
      * @return {@code true} if configured, otherwise {@code false}.
      */
-    public boolean isDeviceUrlAvailable() {
-        return deviceUrl != null;
+    public boolean isChatUrlAvailable() {
+        return chatUrl != null;
+    }
+
+    /**
+     * Returns a new chat socket URL builder.
+     *
+     * @return A URL builder.
+     */
+    @NonNull
+    public UrlBuilder chatSocketUrl() {
+        return new UrlBuilder(chatSocketUrl);
+    }
+
+    /**
+     * Checks if the chatSocketUrl is configured or not.
+     * @return {@code true} if configured, otherwise {@code false}.
+     */
+    public boolean isChatSocketUrlAvailable() {
+        return chatSocketUrl != null;
     }
 
     /**
@@ -104,6 +136,8 @@ public class AirshipUrlConfig {
         private String analyticsUrl;
         private String walletUrl;
         private String remoteDataUrl;
+        private String chatUrl;
+        private String chatSocketUrl;
 
 
         @NonNull
@@ -131,6 +165,18 @@ public class AirshipUrlConfig {
         }
 
         @NonNull
+        public Builder setChatUrl(@Nullable String url) {
+            this.chatUrl = url;
+            return this;
+        }
+
+        @NonNull
+        public Builder setChatSocketUrl(@Nullable String url) {
+            this.chatSocketUrl = url;
+            return this;
+        }
+
+        @NonNull
         public AirshipUrlConfig build() {
             return new AirshipUrlConfig(this);
         }
@@ -149,12 +195,14 @@ public class AirshipUrlConfig {
         return ObjectsCompat.equals(analyticsUrl, that.analyticsUrl) &&
                 ObjectsCompat.equals(deviceUrl, that.deviceUrl) &&
                 ObjectsCompat.equals(remoteDataUrl, that.remoteDataUrl) &&
-                ObjectsCompat.equals(walletUrl, that.walletUrl);
+                ObjectsCompat.equals(walletUrl, that.walletUrl) &&
+                ObjectsCompat.equals(chatUrl, that.chatUrl) &&
+                ObjectsCompat.equals(chatSocketUrl, that.chatSocketUrl);
 
     }
 
     @Override
     public int hashCode() {
-        return ObjectsCompat.hash(analyticsUrl, deviceUrl, remoteDataUrl, walletUrl);
+        return ObjectsCompat.hash(analyticsUrl, deviceUrl, remoteDataUrl, walletUrl, chatUrl, chatSocketUrl);
     }
 }

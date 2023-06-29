@@ -6,7 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.PreferenceDataStore;
 import com.urbanairship.automation.Audience;
 import com.urbanairship.automation.Schedule;
@@ -58,12 +58,12 @@ public class LegacyDataMigrator {
     public void migrateData(@NonNull final AutomationDao dao) {
         LegacyDataManager actionDataManager = new LegacyDataManager(context, config.getConfigOptions().appKey, "ua_automation.db");
         if (actionDataManager.databaseExists(context)) {
-            UALog.v("Migrating actions automation database.");
+            Logger.verbose("Migrating actions automation database.");
             migrateDatabase(actionDataManager, new Migrator() {
                 @Override
                 public void onMigrate(@NonNull ScheduleEntity scheduleEntity, @NonNull List<TriggerEntity> triggerEntities) {
                     scheduleEntity.scheduleType = Schedule.TYPE_ACTION;
-                    UALog.v("Saving migrated action schedule: %s triggers: %s", scheduleEntity, triggerEntities);
+                    Logger.verbose("Saving migrated action schedule: %s triggers: %s", scheduleEntity, triggerEntities);
                     dao.insert(new FullSchedule(scheduleEntity, triggerEntities));
                 }
             });
@@ -71,7 +71,7 @@ public class LegacyDataMigrator {
 
         LegacyDataManager iamDataManager = new LegacyDataManager(context, config.getConfigOptions().appKey, "in-app");
         if (iamDataManager.databaseExists(context)) {
-            UALog.v("Migrating in-app message database.");
+            Logger.verbose("Migrating in-app message database.");
 
             Set<String> knownRemoteScheduleIds = dataStore.getJsonValue(LEGACY_SCHEDULED_MESSAGES_KEY).optMap().keySet();
             migrateDatabase(iamDataManager, new MessageMigrator(dao, knownRemoteScheduleIds));
@@ -87,7 +87,7 @@ public class LegacyDataMigrator {
                 migrateDataFromCursor(cursor, migrator);
             }
         } catch (Exception e) {
-            UALog.e(e, "Error when migrating database.");
+            Logger.error(e, "Error when migrating database.");
         } finally {
             closeCursor(cursor);
             dataManager.deleteAllSchedules();
@@ -137,7 +137,7 @@ public class LegacyDataMigrator {
                     JsonValue dataJson = JsonValue.parseString(cursor.getString(cursor.getColumnIndex(LegacyDataManager.ScheduleTable.COLUMN_NAME_DATA)));
                     scheduleEntity.data = dataJson;
                 } catch (JsonException e) {
-                    UALog.e(e, "Failed to parse schedule entry.");
+                    Logger.error(e, "Failed to parse schedule entry.");
                     continue;
                 }
             }
@@ -189,7 +189,7 @@ public class LegacyDataMigrator {
                 return JsonPredicate.parse(jsonValue);
             }
         } catch (JsonException e) {
-            UALog.e(e, "Failed to parse JSON predicate.");
+            Logger.error(e, "Failed to parse JSON predicate.");
             return null;
         }
 
@@ -202,7 +202,7 @@ public class LegacyDataMigrator {
                 cursor.close();
             }
         } catch (SQLException e) {
-            UALog.e(e, "Failed to close cursor.");
+            Logger.error(e, "Failed to close cursor.");
         }
     }
 
@@ -269,12 +269,12 @@ public class LegacyDataMigrator {
                 try {
                     scheduleEntity.audience = Audience.fromJson(audienceJson);
                 } catch (JsonException e) {
-                    UALog.e(e, "Unable to schedule due to audience JSON");
+                    Logger.error(e, "Unable to schedule due to audience JSON");
                     return;
                 }
             }
 
-            UALog.v("Saving migrated message schedule: %s triggers: %s", scheduleEntity, triggerEntities);
+            Logger.verbose("Saving migrated message schedule: %s triggers: %s", scheduleEntity, triggerEntities);
             dao.insert(new FullSchedule(scheduleEntity, triggerEntities));
         }
 

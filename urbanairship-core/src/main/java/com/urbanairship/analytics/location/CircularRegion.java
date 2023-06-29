@@ -2,7 +2,7 @@
 
 package com.urbanairship.analytics.location;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import androidx.annotation.FloatRange;
 
@@ -81,17 +81,17 @@ public class CircularRegion {
      */
     public boolean isValid() {
         if (this.radius > MAX_RADIUS || this.radius <= 0) {
-            UALog.e("The radius must be greater than %s and less than or equal to %s meters.", 0, MAX_RADIUS);
+            Logger.error("The radius must be greater than %s and less than or equal to %s meters.", 0, MAX_RADIUS);
             return false;
         }
 
         if (!RegionEvent.regionEventLatitudeIsValid(this.latitude)) {
-            UALog.e("The latitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LATITUDE, RegionEvent.MAX_LATITUDE);
+            Logger.error("The latitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LATITUDE, RegionEvent.MAX_LATITUDE);
             return false;
         }
 
         if (!RegionEvent.regionEventLongitudeIsValid(this.longitude)) {
-            UALog.e("The longitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LONGITUDE, RegionEvent.MAX_LONGITUDE);
+            Logger.error("The longitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LONGITUDE, RegionEvent.MAX_LONGITUDE);
             return false;
         }
 

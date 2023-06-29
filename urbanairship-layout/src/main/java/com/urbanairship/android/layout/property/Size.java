@@ -157,7 +157,7 @@ public class Size {
 
         @Override
         public int getInt() {
-            return (int) getFloat();
+            return Integer.parseInt(value);
         }
 
         @NonNull

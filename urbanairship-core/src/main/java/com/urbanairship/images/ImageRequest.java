@@ -1,20 +1,17 @@
 package com.urbanairship.images;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.drawable.AnimatedImageDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.urbanairship.AirshipExecutors;
 import com.urbanairship.CancelableOperation;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.util.ImageUtils;
 
 import java.io.IOException;
@@ -22,7 +19,6 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.concurrent.Executor;
 
-import androidx.annotation.ColorInt;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,7 +31,6 @@ import androidx.core.content.ContextCompat;
 abstract class ImageRequest {
 
     private final Executor EXECUTOR = AirshipExecutors.threadPoolExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     /**
      * Duration of the fade in animation when loading a bitmap into the image view in milliseconds.
@@ -48,8 +43,6 @@ abstract class ImageRequest {
     private final Context context;
 
     private final CancelableOperation pendingRequest = new CancelableOperation();
-
-    private final ColorDrawable transparentDrawable;
 
     private ViewTreeObserver.OnPreDrawListener preDrawListener;
     private int width;
@@ -72,8 +65,6 @@ abstract class ImageRequest {
         this.imageCache = imageCache;
         this.imageRequestOptions = imageRequestOptions;
         this.imageViewReference = new WeakReference<>(imageView);
-        this.transparentDrawable =
-                new ColorDrawable(ContextCompat.getColor(context, android.R.color.transparent));
     }
 
     /**
@@ -100,7 +91,7 @@ abstract class ImageRequest {
 
         final ImageView imageView = imageViewReference.get();
         if (imageView == null) {
-            onFinish(null, false);
+            onFinish(null);
             return;
         }
 
@@ -120,7 +111,7 @@ abstract class ImageRequest {
 
                         if (imageView.getViewTreeObserver().isAlive()) {
                             if (imageView.getHeight() == 0 && imageView.getWidth() == 0) {
-                                onFinish(imageView, false);
+                                onFinish(imageView);
                             } else {
                                 execute();
                             }
@@ -139,7 +130,7 @@ abstract class ImageRequest {
 
         if (cachedEntry != null) {
             imageView.setImageDrawable(cachedEntry);
-            onFinish(imageView, true);
+            onFinish(imageView);
         } else {
             if (imageRequestOptions.getPlaceHolder() != 0) {
                 imageView.setImageResource(imageRequestOptions.getPlaceHolder());
@@ -165,8 +156,8 @@ abstract class ImageRequest {
                                         return;
                                     }
 
-                                    boolean result = applyDrawable(drawable);
-                                    onFinish(imageView, result);
+                                    applyDrawable(drawable);
+                                    onFinish(imageView);
                                 }
                             });
 
@@ -174,7 +165,7 @@ abstract class ImageRequest {
                         }
 
                     } catch (IOException e) {
-                        UALog.d(e, "Unable to fetch bitmap");
+                        Logger.debug(e, "Unable to fetch bitmap");
                     }
                 }
             });
@@ -196,7 +187,7 @@ abstract class ImageRequest {
      *
      * @param imageView The image view.
      */
-    abstract void onFinish(@Nullable ImageView imageView, boolean success);
+    abstract void onFinish(@Nullable ImageView imageView);
 
     @Nullable
     @WorkerThread
@@ -224,26 +215,21 @@ abstract class ImageRequest {
     }
 
     @MainThread
-    private boolean applyDrawable(Drawable drawable) {
+    private void applyDrawable(Drawable drawable) {
         final ImageView imageView = imageViewReference.get();
-        if (drawable != null && imageView != null && !pendingRequest.isCancelled()) {
-            mainHandler.post(() -> {
-                try {
-                    // Transition drawable with a transparent drawable and the final drawable
-                    TransitionDrawable td = new TransitionDrawable(new Drawable[] { transparentDrawable, drawable });
-
-                    imageView.setImageDrawable(td);
-                    td.startTransition(FADE_IN_TIME_MS);
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && drawable instanceof AnimatedImageDrawable) {
-                        ((AnimatedImageDrawable) drawable).start();
-                    }
-                } catch (Exception e) {
-                    UALog.w(e, "ImageRequest failed! Unable to apply drawable.");
-                }
+        if (drawable != null && imageView != null) {
+            // Transition drawable with a transparent drawable and the final drawable
+            TransitionDrawable td = new TransitionDrawable(new Drawable[] {
+                    new ColorDrawable(ContextCompat.getColor(context, android.R.color.transparent)),
+                    drawable
             });
-            return true;
+
+            imageView.setImageDrawable(td);
+            td.startTransition(FADE_IN_TIME_MS);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && drawable instanceof AnimatedImageDrawable) {
+                ((AnimatedImageDrawable) drawable).start();
+            }
         }
-        return false;
     }
 }

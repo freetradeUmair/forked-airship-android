@@ -4,8 +4,9 @@ package com.urbanairship.iam.html;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.graphics.Color;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,13 +19,13 @@ import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.automation.R;
 import com.urbanairship.iam.InAppMessageActivity;
 import com.urbanairship.iam.ResolutionInfo;
 import com.urbanairship.iam.view.BoundedFrameLayout;
-import com.urbanairship.UrlAllowList;
+import com.urbanairship.js.UrlAllowList;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonValue;
 import com.urbanairship.webkit.AirshipWebChromeClient;
@@ -63,7 +64,7 @@ public class HtmlActivity extends InAppMessageActivity {
 
         final HtmlDisplayContent displayContent = getMessage().getDisplayContent();
         if (displayContent == null) {
-            UALog.e("HtmlActivity - Invalid display type: %s", getMessage().getDisplayContent());
+            Logger.error("HtmlActivity - Invalid display type: %s", getMessage().getDisplayContent());
             finish();
             return;
         }
@@ -89,7 +90,7 @@ public class HtmlActivity extends InAppMessageActivity {
         this.url = displayContent.getUrl();
 
         if (!UAirship.shared().getUrlAllowList().isAllowed(url, UrlAllowList.SCOPE_OPEN_URL)) {
-            UALog.e("HTML in-app message URL is not allowed. Unable to display message.");
+            Logger.error("HTML in-app message URL is not allowed. Unable to display message.");
             finish();
             return;
         }
@@ -107,7 +108,7 @@ public class HtmlActivity extends InAppMessageActivity {
                     finish();
 
                 } catch (JsonException e) {
-                    UALog.e("Unable to parse message resolution JSON", e);
+                    Logger.error("Unable to parse message resolution JSON", e);
                 }
             }
 
@@ -135,7 +136,7 @@ public class HtmlActivity extends InAppMessageActivity {
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 if (failingUrl != null && failingUrl.equals(getIntent().getDataString())) {
-                    UALog.e("HtmlActivity - Failed to load page %s with error %s %s", failingUrl, errorCode, description);
+                    Logger.error("HtmlActivity - Failed to load page %s with error %s %s", failingUrl, errorCode, description);
                     error = errorCode;
                 }
             }
@@ -159,14 +160,10 @@ public class HtmlActivity extends InAppMessageActivity {
             }
         });
 
-        int backgroundColor = displayContent.getBackgroundColor();
-        content.setBackgroundColor(backgroundColor);
-        webView.setBackgroundColor(backgroundColor);
+        content.setBackgroundColor(displayContent.getBackgroundColor());
 
-        if (Color.alpha(backgroundColor) == 255) {
-            if (borderRadius > 0) {
-                content.setClipPathBorderRadius(borderRadius);
-            }
+        if (borderRadius > 0) {
+            content.setClipPathBorderRadius(borderRadius);
         }
     }
 
@@ -247,7 +244,7 @@ public class HtmlActivity extends InAppMessageActivity {
             return;
         }
 
-        UALog.i("Loading url: %s", url);
+        Logger.info("Loading url: %s", url);
         error = null;
         webView.loadUrl(url);
     }

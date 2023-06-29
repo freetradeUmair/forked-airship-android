@@ -4,9 +4,8 @@ package com.urbanairship.iam.actions;
 
 import android.net.Uri;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
-import com.urbanairship.UrlAllowList;
 import com.urbanairship.actions.Action;
 import com.urbanairship.actions.ActionArguments;
 import com.urbanairship.actions.ActionResult;
@@ -15,19 +14,21 @@ import com.urbanairship.automation.Schedule;
 import com.urbanairship.automation.Triggers;
 import com.urbanairship.iam.InAppMessage;
 import com.urbanairship.iam.html.HtmlDisplayContent;
+import com.urbanairship.js.UrlAllowList;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.push.PushMessage;
+import com.urbanairship.util.AirshipComponentUtils;
 import com.urbanairship.util.Checks;
 import com.urbanairship.util.UAStringUtil;
 import com.urbanairship.util.UriUtils;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.util.Supplier;
 
 /**
  * Schedules a landing page to display ASAP.
@@ -76,8 +77,7 @@ public class LandingPageAction extends Action {
      */
     public final static float DEFAULT_BORDER_RADIUS = 2;
 
-    private final Supplier<InAppAutomation> inAppAutomationSupplier;
-    private final Supplier<UrlAllowList> allowListSupplier;
+    private final Callable<InAppAutomation> inAppCallable;
 
     private float borderRadius = DEFAULT_BORDER_RADIUS;
 
@@ -85,19 +85,23 @@ public class LandingPageAction extends Action {
      * Default constructor.
      */
     public LandingPageAction() {
-        this(InAppAutomation::shared, () -> UAirship.shared().getUrlAllowList());
+        this(AirshipComponentUtils.callableForComponent(InAppAutomation.class));
     }
 
     @VisibleForTesting
-    LandingPageAction(@NonNull Supplier<InAppAutomation> inAppAutomationSupplier, @NonNull Supplier<UrlAllowList> allowListSupplier) {
-        this.inAppAutomationSupplier = inAppAutomationSupplier;
-        this.allowListSupplier = allowListSupplier;
+    LandingPageAction(@NonNull Callable<InAppAutomation> inAppCallable) {
+        this.inAppCallable = inAppCallable;
     }
 
     @NonNull
     @Override
     public ActionResult perform(@NonNull ActionArguments arguments) {
-        InAppAutomation inAppAutomation = inAppAutomationSupplier.get();
+        InAppAutomation inAppAutomation;
+        try {
+            inAppAutomation = inAppCallable.call();
+        } catch (Exception e) {
+            return ActionResult.newErrorResult(e);
+        }
 
         final Uri uri = parseUri(arguments);
         Checks.checkNotNull(uri, "URI should not be null");
@@ -256,8 +260,8 @@ public class LandingPageAction extends Action {
             uri = Uri.parse("https://" + uri);
         }
 
-        if (!allowListSupplier.get().isAllowed(uri.toString(), UrlAllowList.SCOPE_OPEN_URL)) {
-            UALog.e("Landing page URL is not allowed: %s", uri);
+        if (!UAirship.shared().getUrlAllowList().isAllowed(uri.toString(), UrlAllowList.SCOPE_OPEN_URL)) {
+            Logger.error("Landing page URL is not allowed: %s", uri);
             return null;
         }
 

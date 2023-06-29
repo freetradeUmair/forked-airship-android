@@ -15,7 +15,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import com.urbanairship.Cancelable;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.R;
 import com.urbanairship.UAirship;
 import com.urbanairship.actions.ActionCompletionCallback;
@@ -25,7 +25,7 @@ import com.urbanairship.actions.ActionRunRequestFactory;
 import com.urbanairship.javascript.JavaScriptEnvironment;
 import com.urbanairship.javascript.JavaScriptExecutor;
 import com.urbanairship.javascript.NativeBridge;
-import com.urbanairship.UrlAllowList;
+import com.urbanairship.js.UrlAllowList;
 
 import java.io.BufferedInputStream;
 import java.util.HashMap;
@@ -289,7 +289,7 @@ public class AirshipWebViewClient extends WebViewClient {
         try {
             return new WebResourceResponse("image/png", null, new BufferedInputStream(webView.getContext().getResources().openRawResource(R.raw.ua_blank_favicon)));
         } catch (Exception e) {
-            UALog.e(e, "Failed to read blank favicon with IOException.");
+            Logger.error(e, "Failed to read blank favicon with IOException.");
         }
 
         return null;
@@ -307,7 +307,7 @@ public class AirshipWebViewClient extends WebViewClient {
         }
 
         if (!isAllowed(url)) {
-            UALog.d("%s is not an allowed URL. Airship Javascript interface will not be accessible.", url);
+            Logger.debug("%s is not an allowed URL. Airship Javascript interface will not be accessible.", url);
             return;
         }
 

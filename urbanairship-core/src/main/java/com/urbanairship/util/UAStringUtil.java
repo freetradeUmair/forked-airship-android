@@ -5,22 +5,16 @@ package com.urbanairship.util;
 import android.content.Context;
 import android.util.Base64;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
 
 /**
  * A class containing utility methods related to strings.
@@ -105,7 +99,7 @@ public abstract class UAStringUtil {
             byte[] hash = digest.digest(value.getBytes("UTF-8"));
             return byteToHex(hash);
         } catch (@NonNull NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            UALog.e(e, "Failed to encode string: %s", value);
+            Logger.error(e, "Failed to encode string: %s", value);
             return null;
         }
     }
@@ -127,7 +121,7 @@ public abstract class UAStringUtil {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return digest.digest(value.getBytes("UTF-8"));
         } catch (@NonNull NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            UALog.e(e, "Failed to encode string: %s", value);
+            Logger.error(e, "Failed to encode string: %s", value);
             return null;
         }
     }
@@ -163,7 +157,7 @@ public abstract class UAStringUtil {
         try {
             return Base64.decode(encoded, Base64.DEFAULT);
         } catch (IllegalArgumentException e) {
-            UALog.v("Failed to decode string: %s", encoded);
+            Logger.verbose("Failed to decode string: %s", encoded);
             return null;
         }
     }
@@ -184,7 +178,7 @@ public abstract class UAStringUtil {
         try {
             return new String(decoded, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            UALog.e(e, "Failed to create string");
+            Logger.error(e, "Failed to create string");
             return null;
         }
     }
@@ -206,22 +200,5 @@ public abstract class UAStringUtil {
         } else {
             return context.getString(resourceId);
         }
-    }
-
-    /**
-     * Generates a base64 encoded HmacSHA256 signed value.
-     * @param secret The secret
-     * @param values A list of values that will be concatenated by ":"
-     * @return A signed token.
-     */
-    @NonNull
-    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public static String generateSignedToken(@NonNull String secret, @NonNull List<String> values) throws NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException {
-        Mac hmac = Mac.getInstance("HmacSHA256");
-        SecretKeySpec key = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256");
-        hmac.init(key);
-        String message = String.join(":", values);
-        byte[] hashed = hmac.doFinal(message.getBytes("UTF-8"));
-        return Base64.encodeToString(hashed, Base64.DEFAULT);
     }
 }

@@ -1,12 +1,12 @@
 package com.urbanairship.android.layout.util;
 
-import com.urbanairship.android.layout.info.ImageButtonInfo;
-import com.urbanairship.android.layout.info.ItemInfo;
-import com.urbanairship.android.layout.info.MediaInfo;
-import com.urbanairship.android.layout.info.ViewGroupInfo;
-import com.urbanairship.android.layout.info.ViewInfo;
-import com.urbanairship.android.layout.info.WebViewInfo;
+import com.urbanairship.android.layout.model.BaseModel;
+import com.urbanairship.android.layout.model.ImageButtonModel;
+import com.urbanairship.android.layout.model.LayoutModel;
+import com.urbanairship.android.layout.model.MediaModel;
+import com.urbanairship.android.layout.model.WebViewModel;
 import com.urbanairship.android.layout.property.Image;
+import com.urbanairship.android.layout.property.MediaType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,41 +42,41 @@ public class UrlInfo {
     }
 
     @NonNull
-    public static List<UrlInfo> from(@NonNull ViewInfo info) {
+    public static List<UrlInfo> from(@NonNull BaseModel model) {
         List<UrlInfo> urlInfos = new ArrayList<>();
 
-        switch (info.getType()) {
+        switch (model.getType()) {
             case MEDIA:
-                MediaInfo mediaInfo = (MediaInfo) info;
+                MediaModel mediaModel = (MediaModel) model;
 
-                switch (mediaInfo.getMediaType()) {
+                switch (mediaModel.getMediaType()) {
                     case IMAGE:
-                        urlInfos.add(new UrlInfo(UrlType.IMAGE, mediaInfo.getUrl()));
+                        urlInfos.add(new UrlInfo(UrlType.IMAGE, mediaModel.getUrl()));
                         break;
                     case VIDEO:
                     case YOUTUBE:
-                        urlInfos.add(new UrlInfo(UrlType.VIDEO, mediaInfo.getUrl()));
+                        urlInfos.add(new UrlInfo(UrlType.VIDEO, mediaModel.getUrl()));
                         break;
                 }
                 break;
 
             case IMAGE_BUTTON:
-                ImageButtonInfo imageButtonInfo = (ImageButtonInfo) info;
-                if (imageButtonInfo.getImage().getType() == Image.Type.URL) {
-                    String url = ((Image.Url) imageButtonInfo.getImage()).getUrl();
+                ImageButtonModel imageButtonModel = (ImageButtonModel) model;
+                if (imageButtonModel.getImage().getType() == Image.Type.URL) {
+                    String url = ((Image.Url) imageButtonModel.getImage()).getUrl();
                     urlInfos.add(new UrlInfo(UrlType.IMAGE, url));
                 }
                 break;
 
             case WEB_VIEW:
-                WebViewInfo webViewInfo = (WebViewInfo) info;
-                urlInfos.add(new UrlInfo(UrlType.WEB_PAGE, webViewInfo.getUrl()));
+                WebViewModel webViewModel = (WebViewModel) model;
+                urlInfos.add(new UrlInfo(UrlType.WEB_PAGE, webViewModel.getUrl()));
                 break;
         }
 
-        if (info instanceof ViewGroupInfo<?>) {
-            for (ItemInfo child : ((ViewGroupInfo<?>) info).getChildren()) {
-                urlInfos.addAll(from(child.getInfo()));
+        if (model instanceof LayoutModel) {
+            for (BaseModel child : ((LayoutModel) model).getChildren()) {
+                urlInfos.addAll(from(child));
             }
         }
 

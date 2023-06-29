@@ -11,7 +11,7 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.actions.ActionValue;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonMap;
@@ -75,12 +75,6 @@ public class PushMessage implements Parcelable, JsonSerializable {
      */
     @NonNull
     public static final String EXTRA_ACTIONS = "com.urbanairship.actions";
-
-    /**
-     * The Live Update payload.
-     */
-    @NonNull
-    public static final String EXTRA_LIVE_UPDATE = "com.urbanairship.live_update";
 
     /**
      * The extra key for the payload of Airship actions to be run when an
@@ -318,14 +312,14 @@ public class PushMessage implements Parcelable, JsonSerializable {
     boolean isExpired() {
         String expirationStr = data.get(EXTRA_EXPIRATION);
         if (!UAStringUtil.isEmpty(expirationStr)) {
-            UALog.v("Notification expiration time is \"%s\"", expirationStr);
+            Logger.verbose("Notification expiration time is \"%s\"", expirationStr);
             try {
                 long expiration = Long.parseLong(expirationStr) * 1000;
                 if (expiration < System.currentTimeMillis()) {
                     return true;
                 }
             } catch (NumberFormatException e) {
-                UALog.d(e, "Ignoring malformed expiration time.");
+                Logger.debug(e, "Ignoring malformed expiration time.");
             }
         }
         return false;
@@ -492,7 +486,7 @@ public class PushMessage implements Parcelable, JsonSerializable {
                 }
             }
         } catch (JsonException e) {
-            UALog.e("Unable to parse action payload: %s", actionsPayload);
+            Logger.error("Unable to parse action payload: %s", actionsPayload);
             return actions;
         }
 
@@ -653,7 +647,7 @@ public class PushMessage implements Parcelable, JsonSerializable {
             } else if (!DEFAULT_SOUND_NAME.equals(notificationSoundName)) {
                 // Do not log a warning for the "default" name. Android plays the default sound if no sound
                 // is provided.
-                UALog.w("PushMessage - unable to find notification sound with name: %s", notificationSoundName);
+                Logger.warn("PushMessage - unable to find notification sound with name: %s", notificationSoundName);
             }
         }
 
@@ -671,7 +665,7 @@ public class PushMessage implements Parcelable, JsonSerializable {
             try {
                 return Color.parseColor(colorString);
             } catch (IllegalArgumentException e) {
-                UALog.w("Unrecognized icon color string: %s. Using default color: %s", colorString, defaultColor);
+                Logger.warn("Unrecognized icon color string: %s. Using default color: %s", colorString, defaultColor);
             }
         }
 
@@ -691,21 +685,11 @@ public class PushMessage implements Parcelable, JsonSerializable {
             if (iconId != 0) {
                 return iconId;
             } else {
-                UALog.w("PushMessage - unable to find icon drawable with name: %s. Using default icon: %s", resourceString, defaultIcon);
+                Logger.warn("PushMessage - unable to find icon drawable with name: %s. Using default icon: %s", resourceString, defaultIcon);
             }
         }
 
         return defaultIcon;
-    }
-
-    /**
-     * Gets the Live Update payload, if present.
-     *
-     * @return The Live Update payload or {@code null}, if not present.
-     */
-    @Nullable
-    public String getLiveUpdatePayload() {
-        return data.get(EXTRA_LIVE_UPDATE);
     }
 
     /**
@@ -799,7 +783,7 @@ public class PushMessage implements Parcelable, JsonSerializable {
 
             return new PushMessage(pushBundle);
         } catch (BadParcelableException e) {
-            UALog.e(e, "Failed to parse push message from intent.");
+            Logger.error(e, "Failed to parse push message from intent.");
             return null;
         }
     }

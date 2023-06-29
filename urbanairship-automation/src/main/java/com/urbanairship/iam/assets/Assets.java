@@ -9,7 +9,7 @@ import android.os.Parcelable;
 import android.os.storage.StorageManager;
 
 import com.urbanairship.AirshipExecutors;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonMap;
@@ -51,7 +51,7 @@ public class Assets implements Parcelable {
             try {
                 parsedMap = JsonValue.parseString(in.readString()).optMap();
             } catch (JsonException e) {
-                UALog.e(e, "Failed to parse metadata");
+                Logger.error(e, "Failed to parse metadata");
                 parsedMap = JsonMap.EMPTY_MAP;
             }
 
@@ -184,7 +184,7 @@ public class Assets implements Parcelable {
             outputStream.write(jsonValue.toString().getBytes());
             outputStream.close();
         } catch (Exception e) {
-            UALog.e(e, "Failed to write metadata.");
+            Logger.error(e, "Failed to write metadata.");
         } finally {
             closeQuietly(outputStream);
         }
@@ -212,9 +212,9 @@ public class Assets implements Parcelable {
             }
             return JsonValue.parseString(writer.toString());
         } catch (IOException e) {
-            UALog.e(e, "Error reading file");
+            Logger.error(e, "Error reading file");
         } catch (JsonException e) {
-            UALog.e(e, "Error parsing file as JSON.");
+            Logger.error(e, "Error parsing file as JSON.");
         } finally {
             closeQuietly(reader);
         }
@@ -232,7 +232,7 @@ public class Assets implements Parcelable {
             try {
                 closeable.close();
             } catch (IOException e) {
-                UALog.e(e);
+                Logger.error(e);
             }
         }
     }
@@ -248,16 +248,16 @@ public class Assets implements Parcelable {
                         StorageManager storageManager = (StorageManager) UAirship.getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
                         storageManager.setCacheBehaviorGroup(rootDirectory, true);
                     } catch (IOException e) {
-                        UALog.e(e, "Failed to set cache behavior on directory: %s", rootDirectory.getAbsoluteFile());
+                        Logger.error(e, "Failed to set cache behavior on directory: %s", rootDirectory.getAbsoluteFile());
                     }
                 }
             } else {
-                UALog.e("Failed to create assets directory.");
+                Logger.error("Failed to create assets directory.");
             }
         }
 
         if (!filesDirectory.exists() && !filesDirectory.mkdirs()) {
-            UALog.e("Failed to create directory: %s", filesDirectory.getAbsoluteFile());
+            Logger.error("Failed to create directory: %s", filesDirectory.getAbsoluteFile());
         }
     }
 

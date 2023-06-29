@@ -5,7 +5,7 @@ package com.urbanairship.push.notifications;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonValue;
@@ -108,7 +108,7 @@ public class PublicNotificationExtender implements NotificationCompat.Extender {
 
             builder.setPublicVersion(publicBuilder.build());
         } catch (JsonException e) {
-            UALog.e(e, "Failed to parse public notification.");
+            Logger.error(e, "Failed to parse public notification.");
         }
 
         return builder;

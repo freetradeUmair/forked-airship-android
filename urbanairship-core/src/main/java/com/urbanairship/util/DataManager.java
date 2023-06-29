@@ -13,7 +13,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.SystemClock;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -59,13 +59,13 @@ public abstract class DataManager {
 
             @Override
             public void onUpgrade(@NonNull SQLiteDatabase db, int oldVersion, int newVersion) {
-                UALog.d("Upgrading database %s from version %s to %s", db, oldVersion, newVersion);
+                Logger.debug("Upgrading database %s from version %s to %s", db, oldVersion, newVersion);
                 DataManager.this.onUpgrade(db, oldVersion, newVersion);
             }
 
             @Override
             public void onDowngrade(@NonNull SQLiteDatabase db, int oldVersion, int newVersion) {
-                UALog.d("Downgrading database %s from version %s to %s", db, oldVersion, newVersion);
+                Logger.debug("Downgrading database %s from version %s to %s", db, oldVersion, newVersion);
                 DataManager.this.onDowngrade(db, oldVersion, newVersion);
             }
 
@@ -123,7 +123,7 @@ public abstract class DataManager {
                 // It's very bad for the app if the DB cannot be opened, so it's worth
                 // a sleep to wait for a lock to go away.
                 SystemClock.sleep(100);
-                UALog.e(e, "DataManager - Error opening writable database. Retrying...");
+                Logger.error(e, "DataManager - Error opening writable database. Retrying...");
             }
         }
 
@@ -145,7 +145,7 @@ public abstract class DataManager {
                 // It's very bad for the app if the DB cannot be opened, so it's worth
                 // a sleep to wait for a lock to go away.
                 SystemClock.sleep(100);
-                UALog.e(e, "DataManager - Error opening readable database. Retrying...");
+                Logger.error(e, "DataManager - Error opening readable database. Retrying...");
             }
         }
 
@@ -160,7 +160,7 @@ public abstract class DataManager {
      * @param newVersion Version of the new database
      */
     protected void onUpgrade(@NonNull SQLiteDatabase db, int oldVersion, int newVersion) {
-        UALog.d("onUpgrade not implemented yet.");
+        Logger.debug("onUpgrade not implemented yet.");
     }
 
     /**
@@ -198,7 +198,7 @@ public abstract class DataManager {
             try {
                 return db.delete(table, selection, selectionArgs);
             } catch (Exception ex) {
-                UALog.e(ex, "Unable to delete item from a database");
+                Logger.error(ex, "Unable to delete item from a database");
             }
         }
 
@@ -225,7 +225,7 @@ public abstract class DataManager {
             try {
                 db.replaceOrThrow(table, null, value);
             } catch (Exception ex) {
-                UALog.e(ex, "Unable to insert into database");
+                Logger.error(ex, "Unable to insert into database");
                 db.endTransaction();
                 return Collections.emptyList();
             }
@@ -254,7 +254,7 @@ public abstract class DataManager {
             try {
                 return getWritableDatabase().replaceOrThrow(table, null, values);
             } catch (Exception ex) {
-                UALog.e(ex, "Unable to insert into database");
+                Logger.error(ex, "Unable to insert into database");
             }
         }
 
@@ -281,7 +281,7 @@ public abstract class DataManager {
             try {
                 return db.update(table, values, selection, selectionArgs);
             } catch (SQLException e) {
-                UALog.e(e, "Update Failed");
+                Logger.error(e, "Update Failed");
             }
         }
 
@@ -315,7 +315,7 @@ public abstract class DataManager {
                 return db.query(table, columns, selection,
                         selectionArgs, null, null, sortOrder, limit);
             } catch (SQLException e) {
-                UALog.e(e, "Query Failed");
+                Logger.error(e, "Query Failed");
             }
         }
 
@@ -340,7 +340,7 @@ public abstract class DataManager {
             try {
                 return db.rawQuery(query, selectionArgs);
             } catch (SQLException e) {
-                UALog.e(e, "Query failed");
+                Logger.error(e, "Query failed");
             }
         }
 
@@ -354,7 +354,7 @@ public abstract class DataManager {
         try {
             openHelper.close();
         } catch (Exception ex) {
-            UALog.e(ex, "Failed to close the database.");
+            Logger.error(ex, "Failed to close the database.");
         }
     }
 
@@ -367,7 +367,7 @@ public abstract class DataManager {
         try {
             return context.getDatabasePath(path).delete();
         } catch (Exception e) {
-            UALog.e(e, "Failed to delete database: " + path);
+            Logger.error(e, "Failed to delete database: " + path);
             return false;
         }
     }
@@ -385,7 +385,7 @@ public abstract class DataManager {
 
         File urbanAirshipNoBackupDirectory = new File(ContextCompat.getNoBackupFilesDir(context), DATABASE_DIRECTORY_NAME);
         if (!urbanAirshipNoBackupDirectory.exists() && !urbanAirshipNoBackupDirectory.mkdirs()) {
-            UALog.e("Failed to create UA no backup directory.");
+            Logger.error("Failed to create UA no backup directory.");
         }
 
         File target = new File(urbanAirshipNoBackupDirectory, targetName);
@@ -418,7 +418,7 @@ public abstract class DataManager {
             File journal = new File(oldFile.getAbsolutePath() + "-journal");
             if (journal.exists()) {
                 if (!journal.renameTo(new File(target.getAbsolutePath() + "-journal"))) {
-                    UALog.e("Failed to move the journal file: " + journal);
+                    Logger.error("Failed to move the journal file: " + journal);
                 }
             }
         }

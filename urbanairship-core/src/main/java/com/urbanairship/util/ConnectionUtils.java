@@ -3,15 +3,26 @@
 package com.urbanairship.util;
 
 import android.content.Context;
+import android.os.Build;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.google.NetworkProviderInstaller;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 import androidx.annotation.WorkerThread;
 
@@ -56,16 +67,16 @@ public class ConnectionUtils {
         int result = NetworkProviderInstaller.installSecurityProvider(context);
         switch (result) {
             case NetworkProviderInstaller.PROVIDER_INSTALLED:
-                UALog.i("Network Security Provider installed.");
+                Logger.info("Network Security Provider installed.");
                 skipInstall = true;
                 isInstalled = true;
                 break;
             case NetworkProviderInstaller.PROVIDER_ERROR:
-                UALog.i("Network Security Provider failed to install.");
+                Logger.info("Network Security Provider failed to install.");
                 skipInstall = true;
                 break;
             case NetworkProviderInstaller.PROVIDER_RECOVERABLE_ERROR:
-                UALog.i("Network Security Provider failed to install with a recoverable error.");
+                Logger.info("Network Security Provider failed to install with a recoverable error.");
                 break;
         }
 

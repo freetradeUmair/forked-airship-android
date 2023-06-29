@@ -14,7 +14,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.R;
 import com.urbanairship.util.ManifestUtils;
 
@@ -125,7 +125,7 @@ public class AirshipWebView extends WebView {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         if (ManifestUtils.shouldEnableLocalStorage()) {
-            UALog.v("Application contains metadata to enable local storage");
+            Logger.verbose("Application contains metadata to enable local storage");
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
         }
@@ -186,7 +186,7 @@ public class AirshipWebView extends WebView {
     @Override
     public void setWebViewClient(@Nullable WebViewClient webViewClient) {
         if (webViewClient != null && !(webViewClient instanceof AirshipWebViewClient)) {
-            UALog.w("The web view client should extend AirshipWebViewClient to support Airship url overrides and triggering actions from.");
+            Logger.warn("The web view client should extend AirshipWebViewClient to support Airship url overrides and triggering actions from.");
         }
 
         this.webViewClient = webViewClient;
@@ -199,7 +199,7 @@ public class AirshipWebView extends WebView {
     @SuppressLint("NewApi")
     protected void onPreLoad(@NonNull Runnable onReadyCallback) {
         if (getWebViewClientCompat() == null) {
-            UALog.d("No web view client set, setting a default AirshipWebViewClient for landing page view.");
+            Logger.debug("No web view client set, setting a default AirshipWebViewClient for landing page view.");
             setWebViewClient(new AirshipWebViewClient());
         }
 
@@ -214,13 +214,13 @@ public class AirshipWebView extends WebView {
         if (!isStartSafeBrowsingAttempted && shouldStartSafeBrowsing()) {
             WebViewCompat.startSafeBrowsing(getContext().getApplicationContext(), started -> {
                 if (!started) {
-                    UALog.d("Unable to start Safe Browsing. Feature is not supported or disabled in the manifest.");
+                    Logger.debug("Unable to start Safe Browsing. Feature is not supported or disabled in the manifest.");
                 }
                 isStartSafeBrowsingAttempted = true;
                 onReadyCallback.run();
             });
         } else {
-            UALog.d("Unable to start Safe Browsing. Feature is not supported or disabled in the manifest.");
+            Logger.debug("Unable to start Safe Browsing. Feature is not supported or disabled in the manifest.");
             // Safe browsing not supported or disabled, continue loading without it.
             isStartSafeBrowsingAttempted = true;
             onReadyCallback.run();

@@ -6,10 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.Toolbar
 import androidx.navigation.Navigation
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.NavigationUI
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.urbanairship.debug.R
@@ -36,26 +33,7 @@ class DeviceInfoFragment : androidx.fragment.app.Fragment() {
                     .commitNow()
         }
 
-        val fallbackListener = AppBarConfiguration.OnNavigateUpListener {
-            activity?.finish()
-            true
-        }
-
-        // Add a back button if the fragment is opened from Goat settings
-        if (activity?.intent?.extras?.getBoolean("includeBackButton") == true) {
-            var toolbar: Toolbar?
-            view.let { view ->
-                toolbar = view.findViewById(R.id.toolbar)
-                val appBarConfiguration = AppBarConfiguration.Builder(emptySet())
-                    .setFallbackOnNavigateUpListener(fallbackListener)
-                    .build()
-                toolbar?.let {
-                    NavigationUI.setupWithNavController(it, Navigation.findNavController(view), appBarConfiguration)
-                }
-            }
-        } else {
-            setupToolbarWithNavController(R.id.toolbar)
-        }
+        setupToolbarWithNavController(R.id.toolbar)
     }
 
     /**
@@ -83,7 +61,7 @@ class DeviceInfoFragment : androidx.fragment.app.Fragment() {
             return super.onPreferenceTreeClick(preference)
         }
 
-        override fun onDisplayPreferenceDialog(preference: Preference) {
+        override fun onDisplayPreferenceDialog(preference: Preference?) {
             if (preference is InAppAutomationDisplayIntervalPreference) {
                 val dialogFragment = InAppAutomationDisplayIntervalPreferenceDialogFragment.newInstance(preference.key)
                 dialogFragment.setTargetFragment(this, 0)

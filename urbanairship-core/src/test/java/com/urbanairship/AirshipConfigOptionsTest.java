@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.UUID;
 
 import androidx.core.app.NotificationCompat;
 
@@ -91,13 +90,6 @@ public class AirshipConfigOptionsTest extends BaseTestCase {
 
         assertEquals(0, production.notificationAccentColor);
         assertEquals(0, production.notificationIcon);
-    }
-
-    @Test(expected = AirshipConfigOptions.ConfigException.class)
-    public void testThrowsInvalidConfigFile() throws IOException, AirshipConfigOptions.ConfigException {
-        AirshipConfigOptions development = new AirshipConfigOptions.Builder()
-                .tryApplyProperties(getApplication(), UUID.randomUUID().toString())
-                .build();
     }
 
     @Test
@@ -211,11 +203,11 @@ public class AirshipConfigOptionsTest extends BaseTestCase {
     @Test
     public void testEnabledFeaturesMigration() {
         AirshipConfigOptions configOptions = AirshipConfigOptions.newBuilder()
-                                                                 .setEnabledFeatures(PrivacyManager.FEATURE_PUSH)
+                                                                 .setEnabledFeatures(PrivacyManager.FEATURE_CHAT)
                                                                  .setDataCollectionOptInEnabled(true)
                                                                  .build();
 
-        assertEquals(PrivacyManager.FEATURE_PUSH, configOptions.enabledFeatures);
+        assertEquals(PrivacyManager.FEATURE_CHAT, configOptions.enabledFeatures);
 
         configOptions = AirshipConfigOptions.newBuilder()
                                             .setDataCollectionOptInEnabled(true)

@@ -6,7 +6,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.util.Network;
@@ -214,7 +214,7 @@ public abstract class Event {
             return "";
         } catch (ClassCastException e) {
             // https://github.com/urbanairship/android-library/issues/115
-            UALog.e("Connection subtype lookup failed", e);
+            Logger.error("Connection subtype lookup failed", e);
             return "";
         }
     }

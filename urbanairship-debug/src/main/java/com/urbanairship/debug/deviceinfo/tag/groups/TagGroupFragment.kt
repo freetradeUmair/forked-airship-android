@@ -32,7 +32,6 @@ class TagGroupFragment : Fragment() {
         when (viewModel.tagGroupType.get()) {
             TagGroupType.CHANNEL -> binding.radioGroupIdentifierType.check(R.id.channelChip)
             TagGroupType.CONTACT -> binding.radioGroupIdentifierType.check(R.id.namedUserChip)
-            else -> Unit // Do nothing
         }
 
         return binding.root

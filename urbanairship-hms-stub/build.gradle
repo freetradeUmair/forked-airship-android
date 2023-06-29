@@ -20,7 +20,7 @@ android {
 }
 
 dependencies {
-    api(libs.androidx.annotation)
+    api "androidx.annotation:annotation:$rootProject.androidxAnnotationVersion"
 }
 
 afterEvaluate {

@@ -16,16 +16,18 @@ dependencyResolutionManagement {
     }
 }
 
-include ':urbanairship-adm',
+include ':urbanairship-accengage',
+        ':urbanairship-adm',
         ':urbanairship-ads-identifier',
         ':urbanairship-automation',
+        ':urbanairship-chat',
         ':urbanairship-core',
         ':urbanairship-fcm',
         ':urbanairship-hms',
         ':urbanairship-hms-stub',
         ':urbanairship-layout',
         ':urbanairship-layout:playground',
-        ':urbanairship-live-update',
+        ':urbanairship-location',
         ':urbanairship-message-center',
         ':urbanairship-preference',
         ':urbanairship-preference-center',

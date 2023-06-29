@@ -12,7 +12,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.urbanairship.AirshipExecutors;
 import com.urbanairship.Cancelable;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.PendingResult;
 import com.urbanairship.ResultCallback;
 import com.urbanairship.UAirship;
@@ -138,33 +138,33 @@ public class NativeBridge {
             return false;
         }
 
-        UALog.v("Intercepting: %s", url);
+        Logger.verbose("Intercepting: %s", url);
 
         switch (uri.getHost()) {
             case RUN_BASIC_ACTIONS_COMMAND:
-                UALog.i("Running run basic actions command for URL: %s", url);
+                Logger.info("Running run basic actions command for URL: %s", url);
                 runActions(actionRunRequestExtender, decodeActionArguments(uri, true));
                 break;
 
             case RUN_ACTIONS_COMMAND:
-                UALog.i("Running run actions command for URL: %s", url);
+                Logger.info("Running run actions command for URL: %s", url);
                 runActions(actionRunRequestExtender, decodeActionArguments(uri, false));
                 break;
 
             case RUN_ACTIONS_COMMAND_CALLBACK:
-                UALog.i("Running run actions command with callback for URL: %s", url);
+                Logger.info("Running run actions command with callback for URL: %s", url);
 
                 List<String> paths = uri.getPathSegments();
                 if (paths.size() == 3) {
-                    UALog.i("Action: %s, Args: %s, Callback: %s", paths.get(0), paths.get(1), paths.get(2));
+                    Logger.info("Action: %s, Args: %s, Callback: %s", paths.get(0), paths.get(1), paths.get(2));
                     runAction(actionRunRequestExtender, javaScriptExecutor, paths.get(0), paths.get(1), paths.get(2));
                 } else {
-                    UALog.e("Unable to run action, invalid number of arguments.");
+                    Logger.error("Unable to run action, invalid number of arguments.");
                 }
                 break;
 
             case SET_NAMED_USER_COMMAND:
-                UALog.i("Running set Named User command for URL: %s", uri) ;
+                Logger.info("Running set Named User command for URL: %s", uri) ;
                 Map<String, List<String>> args = UriUtils.getQueryParameters(uri);
                 if (args.get(NAMED_USER_ARGUMENT_KEY) != null) {
                     String namedUser = args.get(NAMED_USER_ARGUMENT_KEY).get(0);
@@ -175,7 +175,7 @@ public class NativeBridge {
                 break;
 
             case CLOSE_COMMAND:
-                UALog.i("Running close command for URL: %s", url);
+                Logger.info("Running close command for URL: %s", url);
                 commandDelegate.onClose();
                 break;
 
@@ -210,7 +210,7 @@ public class NativeBridge {
                                                 @NonNull final JavaScriptEnvironment javaScriptEnvironment,
                                                 @NonNull final JavaScriptExecutor javaScriptExecutor) {
 
-        UALog.i("Loading Airship Javascript interface.");
+        Logger.info("Loading Airship Javascript interface.");
 
         final PendingResult<String> pendingLoad = new PendingResult<>();
         pendingLoad.addResultCallback(Looper.myLooper(), new ResultCallback<String>() {
@@ -287,7 +287,7 @@ public class NativeBridge {
         try {
             actionValue = new ActionValue(JsonValue.parseString(value));
         } catch (JsonException e) {
-            UALog.e(e, "Unable to parse action argument value: %s", value);
+            Logger.error(e, "Unable to parse action argument value: %s", value);
             triggerCallback(javaScriptExecutor, "Unable to decode arguments payload", new ActionValue(), callbackKey);
             return;
         }
@@ -377,7 +377,7 @@ public class NativeBridge {
             List<ActionValue> decodedActionArguments = new ArrayList<>();
 
             if (options.get(actionName) == null) {
-                UALog.w("No arguments to decode for actionName: %s", actionName);
+                Logger.warn("No arguments to decode for actionName: %s", actionName);
                 return null;
             }
 
@@ -390,7 +390,7 @@ public class NativeBridge {
                     JsonValue jsonValue = basicEncoding ? JsonValue.wrap(arg) : JsonValue.parseString(arg);
                     decodedActionArguments.add(new ActionValue(jsonValue));
                 } catch (JsonException e) {
-                    UALog.w(e, "Invalid json. Unable to create action argument "
+                    Logger.warn(e, "Invalid json. Unable to create action argument "
                             + actionName + " with args: " + arg);
                     return null;
                 }
@@ -400,7 +400,7 @@ public class NativeBridge {
         }
 
         if (decodedActions.isEmpty()) {
-            UALog.w("Error no action names are present in the actions key set");
+            Logger.warn("Error no action names are present in the actions key set");
             return null;
         }
 

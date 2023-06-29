@@ -18,7 +18,7 @@ import com.urbanairship.AirshipComponent;
 import com.urbanairship.AirshipComponentGroups;
 import com.urbanairship.AirshipConfigOptions;
 import com.urbanairship.AirshipExecutors;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.Predicate;
 import com.urbanairship.PreferenceDataStore;
 import com.urbanairship.PrivacyManager;
@@ -114,7 +114,7 @@ public class MessageCenter extends AirshipComponent {
                          @NonNull AirshipChannel channel,
                          @NonNull PushManager pushManager,
                          @NonNull AirshipConfigOptions configOptions) {
-        this(context, dataStore, privacyManager, new Inbox(context, dataStore, channel, configOptions, privacyManager), pushManager);
+        this(context, dataStore, privacyManager, new Inbox(context, dataStore, channel, configOptions), pushManager);
     }
 
     /**
@@ -143,7 +143,7 @@ public class MessageCenter extends AirshipComponent {
             @Override
             public void onPushReceived(@NonNull PushMessage message, boolean notificationPosted) {
                 if (!UAStringUtil.isEmpty(message.getRichPushMessageId()) && getInbox().getMessage(message.getRichPushMessageId()) == null) {
-                    UALog.d("Received a Rich Push.");
+                    Logger.debug("Received a Rich Push.");
                     getInbox().fetchMessages();
                 }
             }
@@ -187,7 +187,7 @@ public class MessageCenter extends AirshipComponent {
 
         if (isEnabled) {
             if (!isStarted.getAndSet(true)) {
-                UALog.v("Initializing Inbox...");
+                Logger.verbose("Initializing Inbox...");
 
                 pushManager.addInternalPushListener(pushListener);
             }
@@ -314,7 +314,7 @@ public class MessageCenter extends AirshipComponent {
      */
     public void showMessageCenter(@Nullable String messageId) {
         if (!privacyManager.isEnabled(FEATURE_MESSAGE_CENTER)) {
-            UALog.w("Unable to show Message Center. FEATURE_MESSAGE_CENTER is not enabled in PrivacyManager.");
+            Logger.warn("Unable to show Message Center. FEATURE_MESSAGE_CENTER is not enabled in PrivacyManager.");
             return;
         }
 

@@ -5,7 +5,7 @@ package com.urbanairship.json;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.util.UAStringUtil;
 
 import org.json.JSONArray;
@@ -169,7 +169,7 @@ public class JsonValue implements Parcelable, JsonSerializable {
                 return JSONObject.numberToString((Number) value);
             } catch (JSONException e) {
                 // Should never happen
-                UALog.e(e, "JsonValue - Failed to coerce JSON Number into String.");
+                Logger.error(e, "JsonValue - Failed to coerce JSON Number into String.");
                 return null;
             }
         }
@@ -572,7 +572,7 @@ public class JsonValue implements Parcelable, JsonSerializable {
             return String.valueOf(value);
         } catch (JSONException e) {
             // Should never happen
-            UALog.e(e, "JsonValue - Failed to create JSON String.");
+            Logger.error(e, "JsonValue - Failed to create JSON String.");
             return "";
         }
     }
@@ -931,7 +931,7 @@ public class JsonValue implements Parcelable, JsonSerializable {
             try {
                 return JsonValue.parseString(in.readString());
             } catch (JsonException e) {
-                UALog.e(e, "JsonValue - Unable to create JsonValue from parcel.");
+                Logger.error(e, "JsonValue - Unable to create JsonValue from parcel.");
                 return JsonValue.NULL;
             }
         }

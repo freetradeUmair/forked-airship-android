@@ -2,7 +2,8 @@
 
 package com.urbanairship.contacts;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
+import com.urbanairship.channel.SubscriptionListMutation;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonList;
 import com.urbanairship.json.JsonMap;
@@ -94,7 +95,7 @@ public class ScopedSubscriptionListMutation implements JsonSerializable {
             try {
                 mutations.add(fromJsonValue(value));
             } catch (JsonException e) {
-                UALog.e(e, "Invalid subscription list mutation!");
+                Logger.error(e, "Invalid subscription list mutation!");
             }
         }
 

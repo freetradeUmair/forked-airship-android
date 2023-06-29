@@ -1,6 +1,6 @@
 package com.urbanairship.messagecenter;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonValue;
@@ -68,14 +68,14 @@ public class MessageEntity {
     @Nullable
     static protected MessageEntity createMessageFromPayload(@Nullable String messageId, @NonNull JsonValue messagePayload) {
         if (messagePayload == JsonValue.NULL || !messagePayload.isJsonMap()) {
-            UALog.e("MessageEntity - Unexpected message: %s", messagePayload);
+            Logger.error("MessageEntity - Unexpected message: %s", messagePayload);
             return null;
         }
 
         JsonMap messageMap = messagePayload.optMap();
 
         if (UAStringUtil.isEmpty(messageMap.opt(Message.MESSAGE_ID_KEY).getString())) {
-            UALog.e("MessageEntity - Message is missing an ID: %s", messagePayload);
+            Logger.error("MessageEntity - Message is missing an ID: %s", messagePayload);
             return null;
         }
 
@@ -120,7 +120,7 @@ public class MessageEntity {
                 return messageMap.get(Message.MESSAGE_REPORTING_KEY);
             }
         } catch (JsonException e) {
-            UALog.e(e, "MessageEntity - Failed to parse Message reporting.");
+            Logger.error(e, "MessageEntity - Failed to parse Message reporting.");
         }
         return null;
     }
@@ -133,7 +133,7 @@ public class MessageEntity {
         try {
             return Message.create(JsonValue.parseString(entity.rawMessageObject), entity.unread, entity.deleted);
         } catch (JsonException e) {
-            UALog.e("Failed to create Message from JSON");
+            Logger.error("Failed to create Message from JSON");
             return null;
         }
     }

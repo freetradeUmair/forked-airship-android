@@ -4,7 +4,7 @@ package com.urbanairship.iam.assets;
 
 import android.graphics.BitmapFactory;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.android.layout.util.UrlInfo;
 import com.urbanairship.iam.InAppMessage;
 import com.urbanairship.iam.MediaInfo;
@@ -73,7 +73,7 @@ public class AirshipPrepareAssetsDelegate implements PrepareAssetsDelegate {
                     return AssetManager.PREPARE_RESULT_RETRY;
                 }
             } catch (Exception e) {
-                UALog.e(e, "Unable to download file: %s ", url);
+                Logger.error(e, "Unable to download file: %s ", url);
                 return AssetManager.PREPARE_RESULT_RETRY;
             }
         }

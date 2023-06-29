@@ -2,39 +2,101 @@
 
 package com.urbanairship.android.layout.environment;
 
-import android.app.Activity;
 import android.webkit.WebChromeClient;
 
-import com.urbanairship.Predicate;
+import com.urbanairship.android.layout.reporting.DisplayTimer;
 import com.urbanairship.android.layout.util.Factory;
 import com.urbanairship.android.layout.util.ImageCache;
-import com.urbanairship.app.ActivityMonitor;
+import com.urbanairship.webkit.AirshipWebChromeClient;
 import com.urbanairship.webkit.AirshipWebViewClient;
 
+import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
-import androidx.annotation.RestrictTo;
+import androidx.annotation.Nullable;
+import androidx.lifecycle.Lifecycle;
 
 /**
- * Environment provided to layout views.
+ * Environment provided to layout view.
  * @hide
  */
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-public interface ViewEnvironment {
+public class ViewEnvironment implements Environment {
 
     @NonNull
-    ActivityMonitor activityMonitor();
+    private final ComponentActivity activity;
 
     @NonNull
-    Predicate<Activity> hostingActivityPredicate();
+    private final Factory<WebChromeClient> webChromeClientFactory;
 
     @NonNull
-    Factory<WebChromeClient> webChromeClientFactory();
+    private final Factory<AirshipWebViewClient> webViewClientFactory;
 
     @NonNull
-    Factory<AirshipWebViewClient> webViewClientFactory();
+    private final ImageCache imageCache;
 
     @NonNull
-    ImageCache imageCache();
+    private final DisplayTimer displayTimer;
 
-    boolean isIgnoringSafeAreas();
+    private final boolean isIgnoringSafeAreas;
+
+    public ViewEnvironment(
+        @NonNull ComponentActivity activity,
+        @Nullable Factory<AirshipWebViewClient> webViewClientFactory,
+        @Nullable ImageCache imageCache,
+        @NonNull DisplayTimer displayTimer,
+        boolean isIgnoringSafeAreas
+    ) {
+        this.activity = activity;
+
+        this.webChromeClientFactory = () -> new AirshipWebChromeClient(activity);
+
+        if (webViewClientFactory != null) {
+            this.webViewClientFactory = webViewClientFactory;
+        } else {
+            this.webViewClientFactory = AirshipWebViewClient::new;
+        }
+
+        if (imageCache != null) {
+            this.imageCache = imageCache;
+        } else {
+            this.imageCache = url -> null;
+        }
+
+        this.displayTimer = displayTimer;
+
+        this.isIgnoringSafeAreas = isIgnoringSafeAreas;
+    }
+
+    @NonNull
+    @Override
+    public Lifecycle lifecycle() {
+        return activity.getLifecycle();
+    }
+
+    @NonNull
+    public Factory<WebChromeClient> webChromeClientFactory() {
+        return webChromeClientFactory;
+    }
+
+    @NonNull
+    @Override
+    public Factory<AirshipWebViewClient> webViewClientFactory() {
+        return webViewClientFactory;
+    }
+
+    @NonNull
+    @Override
+    public ImageCache imageCache() {
+        return imageCache;
+    }
+
+    @NonNull
+    @Override
+    public DisplayTimer displayTimer() {
+        return displayTimer;
+    }
+
+    @Override
+    public boolean isIgnoringSafeAreas() {
+        return isIgnoringSafeAreas;
+    }
 }

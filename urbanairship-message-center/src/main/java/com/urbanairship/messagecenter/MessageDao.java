@@ -1,6 +1,6 @@
 package com.urbanairship.messagecenter;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.analytics.data.BatchedQueryHelper;
 
 import java.util.Collections;
@@ -28,7 +28,7 @@ public abstract class MessageDao {
         try {
             insertInternal(message);
         } catch (Exception e) {
-            UALog.e(e, "Failed to insert message!");
+            Logger.error(e, "Failed to insert message!");
         }
     }
 
@@ -36,7 +36,7 @@ public abstract class MessageDao {
         try {
             insertMessagesInternal(messages);
         } catch (Exception e) {
-            UALog.e(e, "Failed to insert messages!");
+            Logger.error(e, "Failed to insert messages!");
         }
     }
 
@@ -44,7 +44,7 @@ public abstract class MessageDao {
         try {
             return getMessagesInternal();
         } catch (Exception e) {
-            UALog.e(e, "Failed to get messages!");
+            Logger.error(e, "Failed to get messages!");
             return Collections.emptyList();
         }
     }
@@ -53,7 +53,7 @@ public abstract class MessageDao {
         try {
             return getMessageIdsInternal();
         } catch (Exception e) {
-            UALog.e(e, "Failed to get message IDs!");
+            Logger.error(e, "Failed to get message IDs!");
             return Collections.emptyList();
         }
     }
@@ -62,7 +62,7 @@ public abstract class MessageDao {
         try {
             return getLocallyReadMessagesInternal();
         } catch (Exception e) {
-            UALog.e(e, "Failed to get locally read messages!");
+            Logger.error(e, "Failed to get locally read messages!");
             return Collections.emptyList();
         }
     }
@@ -71,7 +71,7 @@ public abstract class MessageDao {
         try {
             return getLocallyDeletedMessagesInternal();
         } catch (Exception e) {
-            UALog.e(e, "Failed to get locally deleted messages!");
+            Logger.error(e, "Failed to get locally deleted messages!");
             return Collections.emptyList();
         }
     }
@@ -80,7 +80,7 @@ public abstract class MessageDao {
         try {
             markMessagesReadInternal(messageIds);
         } catch (Exception e) {
-            UALog.e(e, "Failed to mark messages as read!");
+            Logger.error(e, "Failed to mark messages as read!");
         }
     }
 
@@ -88,7 +88,7 @@ public abstract class MessageDao {
         try {
             markMessagesUnreadInternal(messageIds);
         } catch (Exception e) {
-            UALog.e(e, "Failed to mark messages as unread!");
+            Logger.error(e, "Failed to mark messages as unread!");
         }
     }
 
@@ -96,7 +96,7 @@ public abstract class MessageDao {
         try {
             markMessagesDeletedInternal(messageIds);
         } catch (Exception e) {
-            UALog.e(e, "Failed to mark messages as deleted!");
+            Logger.error(e, "Failed to mark messages as deleted!");
         }
     }
 
@@ -104,7 +104,7 @@ public abstract class MessageDao {
         try {
             markMessagesReadOriginInternal(messageIds);
         } catch (Exception e) {
-            UALog.e(e, "Failed to mark messages as read (origin)!");
+            Logger.error(e, "Failed to mark messages as read (origin)!");
         }
     }
 
@@ -112,7 +112,7 @@ public abstract class MessageDao {
         try {
             deleteMessagesInternal(messageIds);
         } catch (Exception e) {
-            UALog.e(e, "Failed to delete messages!");
+            Logger.error(e, "Failed to delete messages!");
         }
     }
 
@@ -120,7 +120,7 @@ public abstract class MessageDao {
         try {
             deleteAllMessagesInternal();
         } catch (Exception e) {
-            UALog.e(e, "Failed to delete all messages!");
+            Logger.error(e, "Failed to delete all messages!");
         }
     }
 
@@ -129,7 +129,7 @@ public abstract class MessageDao {
         try {
             return messageExistsInternal(messageId);
         } catch (Exception e) {
-            UALog.e(e, "Failed to check if message exists!");
+            Logger.error(e, "Failed to check if message exists!");
             return false;
         }
     }

@@ -1,7 +1,6 @@
 plugins {
     id 'airship-module'
-    id 'kotlin-android'
-    id 'kotlin-allopen'
+    id 'maven-publish'
 }
 
 description = "Airship Android SDK Automation module"
@@ -10,32 +9,34 @@ dependencies {
     api project(':urbanairship-core')
     implementation project(':urbanairship-layout')
 
-    implementation(libs.androidx.customview)
+    implementation "androidx.customview:customview:$rootProject.androidxCustomViewVersion"
 
-    implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
+    implementation "androidx.room:room-runtime:$rootProject.androidxRoomVersion"
+    annotationProcessor "androidx.room:room-compiler:$rootProject.androidxRoomVersion"
 
     // Tests
     testImplementation project(':urbanairship-test')
-    testImplementation(libs.junit)
-    testImplementation(libs.androidx.test.core)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.robolectric.core)
-    testImplementation(libs.androidx.test.ext.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockito.kotlin)
+    testImplementation "junit:junit:$rootProject.junitVersion"
+    testImplementation "androidx.test:core:$rootProject.androidxTestCoreVersion"
+    testImplementation "org.mockito:mockito-core:$rootProject.mockitoVersion"
+    testImplementation "org.robolectric:robolectric:$rootProject.robolectricVersion"
+    testImplementation "androidx.test.ext:junit:$rootProject.androidxTestJunitVersion"
 }
 
 android {
     namespace 'com.urbanairship.automation'
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-        freeCompilerArgs = ["-Xexplicit-api=strict"]
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                from components.release
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = project.version.toString()
+            }
+        }
     }
 }
-
-allOpen {
-    annotation "com.urbanairship.annotation.OpenForTesting"
-}
-

@@ -2,7 +2,7 @@
 
 package com.urbanairship.analytics.location;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.analytics.Event;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonSerializable;
@@ -274,22 +274,22 @@ public class RegionEvent extends Event implements JsonSerializable {
     @Override
     public boolean isValid() {
         if (regionId == null || source == null) {
-            UALog.e("The region ID and source must not be null.");
+            Logger.error("The region ID and source must not be null.");
             return false;
         }
 
         if (!regionEventCharacterCountIsValid(regionId)) {
-            UALog.e("The region ID must not be greater than %s or less than %s characters in length.", MAX_CHARACTER_LENGTH, 1);
+            Logger.error("The region ID must not be greater than %s or less than %s characters in length.", MAX_CHARACTER_LENGTH, 1);
             return false;
         }
 
         if (!regionEventCharacterCountIsValid(source)) {
-            UALog.e("The source must not be greater than %s or less than %s characters in length.", MAX_CHARACTER_LENGTH, 1);
+            Logger.error("The source must not be greater than %s or less than %s characters in length.", MAX_CHARACTER_LENGTH, 1);
             return false;
         }
 
         if (boundaryEvent < 1 || boundaryEvent > 2) {
-            UALog.e("The boundary event must either be an entrance (%s) or an exit (%s).", BOUNDARY_EVENT_ENTER, BOUNDARY_EVENT_EXIT);
+            Logger.error("The boundary event must either be an entrance (%s) or an exit (%s).", BOUNDARY_EVENT_ENTER, BOUNDARY_EVENT_EXIT);
             return false;
         }
 

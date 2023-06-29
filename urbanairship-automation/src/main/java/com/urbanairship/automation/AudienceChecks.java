@@ -4,7 +4,7 @@ package com.urbanairship.automation;
 
 import android.content.Context;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.PrivacyManager;
 import com.urbanairship.UAirship;
 import com.urbanairship.channel.AirshipChannel;
@@ -166,7 +166,7 @@ public abstract class AudienceChecks {
             // Remove trailing dashes and underscores
             if (!UAStringUtil.isEmpty(languageTag)) {
                 if (languageTag.endsWith("_") || languageTag.endsWith("-")) {
-                    UALog.d("Sanitizing malformed language tag: " + languageTag);
+                    Logger.debug("Sanitizing malformed language tag: " + languageTag);
                     sanitizedLanguageTags.add(languageTag.substring(0, languageTag.length() - 1));
                 } else {
                     sanitizedLanguageTags.add(languageTag);
@@ -222,7 +222,7 @@ public abstract class AudienceChecks {
                 return true;
             }
         } catch (Exception e) {
-            UALog.e("Unable to construct locale list: ", e);
+            Logger.error("Unable to construct locale list: ", e);
         }
 
         return false;
@@ -262,9 +262,9 @@ public abstract class AudienceChecks {
                     builder.putOpt(permission.getValue(), status.getValue());
                 }
             } catch (ExecutionException e) {
-                UALog.e(e, "Failed to get permissions status: %s", permission);
+                Logger.error(e, "Failed to get permissions status: %s", permission);
             } catch (InterruptedException e) {
-                UALog.e(e, "Failed to get permissions status: %s", permission);
+                Logger.error(e, "Failed to get permissions status: %s", permission);
                 Thread.currentThread().interrupt();
             }
         }

@@ -8,12 +8,14 @@ import android.os.Looper
 import android.util.AttributeSet
 import androidx.preference.Preference
 import com.urbanairship.UAirship
+import com.urbanairship.channel.AirshipChannelListener
 import com.urbanairship.debug.R
-import com.urbanairship.push.PushNotificationStatusListener
 
 class PushOptInPreference : Preference {
-    private val listener = PushNotificationStatusListener {
-        postUpdate()
+
+    private val channelListener = object : AirshipChannelListener {
+        override fun onChannelUpdated(channelId: String) = postUpdate()
+        override fun onChannelCreated(channelId: String) = postUpdate()
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -29,12 +31,12 @@ class PushOptInPreference : Preference {
 
     override fun onAttached() {
         super.onAttached()
-        UAirship.shared().pushManager.addNotificationStatusListener(listener)
+        UAirship.shared().channel.addChannelListener(channelListener)
     }
 
     override fun onDetached() {
         super.onDetached()
-        UAirship.shared().pushManager.removeNotificationStatusListener(listener)
+        UAirship.shared().channel.removeChannelListener(channelListener)
     }
 
     private fun postUpdate() {

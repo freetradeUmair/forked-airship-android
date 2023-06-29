@@ -1,7 +1,6 @@
 plugins {
     id 'airship-module'
-    id 'kotlin-android'
-    id 'kotlin-allopen'
+    id 'maven-publish'
 }
 
 description = "Airship Android Core SDK"
@@ -13,62 +12,56 @@ android {
     sourceSets {
         androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
     }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-        freeCompilerArgs = ["-Xexplicit-api=strict"]
-    }
-
     namespace 'com.urbanairship'
 }
 
 dependencies {
     // Required
-    api(libs.androidx.core)
-    api(libs.androidx.appcompat)
-    api(libs.androidx.fragment.fragment)
-    api(libs.androidx.annotation)
+    api "androidx.core:core:$rootProject.androidxCoreVersion"
+    api "androidx.fragment:fragment:$rootProject.androidxFragmentVersion"
+    api "androidx.annotation:annotation:$rootProject.androidxAnnotationVersion"
+    implementation "androidx.room:room-runtime:$rootProject.androidxRoomVersion"
+    annotationProcessor "androidx.room:room-compiler:$rootProject.androidxRoomVersion"
 
-    implementation(libs.androidx.work.runtime)
-    implementation(libs.androidx.concurrentfutures)
-    implementation(libs.androidx.startup.runtime)
-    implementation(libs.androidx.webkit)
+    api "androidx.appcompat:appcompat:$rootProject.androidxAppCompatVersion"
+    compileOnly "com.google.android.gms:play-services-base:$rootProject.playServicesBaseVersion"
 
-    implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
+    implementation "androidx.work:work-runtime:$rootProject.androidXWork"
+    implementation "androidx.concurrent:concurrent-futures:$rootProject.androidXConcurrentFutures"
 
-    compileOnly(libs.playservices.base)
+    implementation "androidx.startup:startup-runtime:$rootProject.androidXStartup"
+
+    implementation "androidx.webkit:webkit:$rootProject.androidxWebKitVersion"
+
 
     // Unit Tests
     testImplementation project(':urbanairship-test')
-    testImplementation(libs.junit)
-    testImplementation(libs.androidx.test.core)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.robolectric.core)
-    testImplementation(libs.androidx.test.ext.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockito.kotlin)
+    testImplementation "junit:junit:$rootProject.junitVersion"
+    testImplementation "androidx.test:core:$rootProject.androidxTestCoreVersion"
+    testImplementation "org.mockito:mockito-core:$rootProject.mockitoVersion"
+    testImplementation "org.robolectric:robolectric:$rootProject.robolectricVersion"
+    testImplementation "androidx.test.ext:junit:$rootProject.androidxTestJunitVersion"
 
     // Instrumentation Test
-    androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.rules)
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.androidx.room.testing)
-    testImplementation(libs.turbine)
+    androidTestImplementation "androidx.test:core:$rootProject.androidxTestCoreVersion"
+    androidTestImplementation "androidx.test:runner:$rootProject.androidxTestRunnerVersion"
+    androidTestImplementation "androidx.test:rules:$rootProject.androidxTestRulesVersion"
+    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestJunitVersion"
+    androidTestImplementation "androidx.room:room-testing:$rootProject.androidxRoomVersion"
 }
 
-tasks.withType(Test).configureEach {
-    forkEvery = 100
-}
 
-allOpen {
-    annotation "com.urbanairship.annotation.OpenForTesting"
-}
 
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                from components.release
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = project.version.toString()
+            }
+        }
+    }
+}

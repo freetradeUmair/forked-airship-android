@@ -139,7 +139,6 @@ public final class ResolutionInfo implements JsonSerializable {
      * @param buttonDescription The button description.
      * @param cancel If the button should cancel or not.
      * @return The resolution info.
-     * @throws IllegalArgumentException if the button info is invalid.
      */
     @NonNull
     public static ResolutionInfo buttonPressed(@NonNull String buttonId, @Nullable String buttonDescription, boolean cancel) {
@@ -149,9 +148,7 @@ public final class ResolutionInfo implements JsonSerializable {
                                           .setLabel(TextInfo.newBuilder()
                                                             .setText(buttonDescription == null ? buttonId : buttonDescription)
                                                             .build())
-                                          // Passing false to skip the MAX_LENGTH check for buttonId.
-                                          // We don't care about limiting the buttonId length for Thomas layout displays.
-                                          .build(false);
+                                          .build();
         return new ResolutionInfo(RESOLUTION_BUTTON_CLICK, buttonInfo);
     }
     /**

@@ -52,7 +52,9 @@ public class RemoteAirshipUrlConfigProvider implements AirshipUrlConfigProvider,
 
     private void updateConfig(@NonNull RemoteAirshipConfig remoteAirshipConfig) {
         AirshipUrlConfig.Builder urlConfigBuilder = AirshipUrlConfig.newBuilder()
-                                                                    .setRemoteDataUrl(firstOrNull(remoteAirshipConfig.getRemoteDataUrl(), configOptions.initialConfigUrl, configOptions.remoteDataUrl));
+                                                                    .setRemoteDataUrl(firstOrNull(remoteAirshipConfig.getRemoteDataUrl(), configOptions.initialConfigUrl, configOptions.remoteDataUrl))
+                                                                    .setChatUrl(firstOrNull(remoteAirshipConfig.getChatUrl(), configOptions.chatUrl))
+                                                                    .setChatSocketUrl(firstOrNull(remoteAirshipConfig.getChatSocketUrl(), configOptions.chatSocketUrl));
 
         if (preferenceDataStore.getBoolean(DISABLE_URL_FALLBACK_KEY, configOptions.requireInitialRemoteConfigEnabled)) {
             urlConfigBuilder.setWalletUrl(remoteAirshipConfig.getWalletUrl())

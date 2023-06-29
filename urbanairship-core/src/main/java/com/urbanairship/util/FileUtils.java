@@ -2,7 +2,7 @@
 
 package com.urbanairship.util;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 
 import java.io.Closeable;
@@ -86,7 +86,7 @@ public abstract class FileUtils {
     @NonNull
     @WorkerThread
     public static DownloadResult downloadFile(@NonNull URL url, @NonNull File file) throws IOException {
-        UALog.v("Downloading file from: %s to: %s", url, file.getAbsolutePath());
+        Logger.verbose("Downloading file from: %s to: %s", url, file.getAbsolutePath());
 
         InputStream inputStream = null;
         FileOutputStream outputStream = null;
@@ -129,7 +129,7 @@ public abstract class FileUtils {
         } catch (IOException | IllegalStateException e) {
             // the file may have been partially created - delete it
             file.delete();
-            UALog.e(e, "Failed to download file from: %s", url);
+            Logger.error(e, "Failed to download file from: %s", url);
             return new DownloadResult(false, -1);
         } finally {
             endRequest(conn, inputStream, outputStream);
@@ -151,7 +151,7 @@ public abstract class FileUtils {
             try {
                 closeable.close();
             } catch (Exception e) {
-                UALog.e(e);
+                Logger.error(e);
             }
         }
 
@@ -164,7 +164,7 @@ public abstract class FileUtils {
                 try {
                     httpURLConnection.getErrorStream().close();
                 } catch (Exception e) {
-                    UALog.e(e);
+                    Logger.error(e);
                 }
             }
 

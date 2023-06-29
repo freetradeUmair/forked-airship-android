@@ -3,12 +3,10 @@
 package com.urbanairship.images;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 /**
  * Image loader.
@@ -19,11 +17,11 @@ public interface ImageLoader {
      * Image loaded callback.
      */
     interface ImageLoadedCallback {
+
         /**
-         * Called when the image has finished loading, with a <code>boolean</code> indicating
-         * whether the image was successfully loaded into the target image view.
+         * Called when the image has been loaded successfully.
          */
-        void onImageLoaded(boolean success);
+        void onImageLoaded();
     }
 
     /**
