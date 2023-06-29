@@ -5,26 +5,30 @@ package com.urbanairship.actions;
 import com.urbanairship.BaseTestCase;
 import com.urbanairship.TestApplication;
 import com.urbanairship.UAirship;
-import com.urbanairship.UrlAllowList;
+import com.urbanairship.js.UrlAllowList;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.robolectric.annotation.Config;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class WalletActionTest extends BaseTestCase {
 
-    private final ActionArguments testArgs = ActionTestUtils.createArgs(Action.SITUATION_MANUAL_INVOCATION, "https://some.example.com");
-    private final UrlAllowList urlAllowList = mock(UrlAllowList.class);
-    private final WalletAction action = new WalletAction(() -> urlAllowList);
+    private WalletAction action;
+    private ActionArguments testArgs;
+    private UrlAllowList urlAllowList;
 
     @Before
     public void setup() {
+
+        action = new WalletAction();
+        testArgs = ActionTestUtils.createArgs(Action.SITUATION_MANUAL_INVOCATION, "https://yep.example.com");
+
+        urlAllowList = UAirship.shared().getUrlAllowList();
+        urlAllowList.addEntry("https://yep.example.com");
+
         // Default the platform to Android
         TestApplication.getApplication().setPlatform(UAirship.ANDROID_PLATFORM);
     }
@@ -34,7 +38,6 @@ public class WalletActionTest extends BaseTestCase {
      */
     @Test
     public void testAcceptsKitKat() {
-        when(urlAllowList.isAllowed(any(), eq(UrlAllowList.SCOPE_OPEN_URL))).thenReturn(true);
         assertTrue(action.acceptsArguments(testArgs));
     }
 
@@ -52,8 +55,8 @@ public class WalletActionTest extends BaseTestCase {
      */
     @Test
     public void testUrlAllowList() {
-        when(urlAllowList.isAllowed(eq("https://some.example.com"), eq(UrlAllowList.SCOPE_OPEN_URL))).thenReturn(false);
-        assertFalse(action.acceptsArguments(testArgs));
+        testArgs = ActionTestUtils.createArgs(Action.SITUATION_MANUAL_INVOCATION, "https://nope.example.com");
+        assertFalse(action.acceptsArguments(ActionTestUtils.createArgs(Action.SITUATION_MANUAL_INVOCATION, "https://nope.example.com")));
     }
 
 }

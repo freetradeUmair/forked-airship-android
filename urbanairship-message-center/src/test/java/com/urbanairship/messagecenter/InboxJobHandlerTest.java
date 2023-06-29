@@ -24,10 +24,7 @@ import org.mockito.Mockito;
 
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -119,11 +116,11 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         // Return a 304 response
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_NOT_MODIFIED, null));
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_NOT_MODIFIED).build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -135,7 +132,7 @@ public class InboxJobHandlerTest {
         verify(inbox).onUpdateMessagesFinished(true);
 
         // Verify LAST_MESSAGE_REFRESH_TIME was not updated
-        assertEquals("some last modified", dataStore.getString(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, null));
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
     }
 
     /**
@@ -150,22 +147,17 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": []}";
-        Map<String, String> responseHeaders = new HashMap<>();
-        responseHeaders.put("Last-Modified", "some other last modified");
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                responseHeaders
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(600L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -177,7 +169,7 @@ public class InboxJobHandlerTest {
         verify(inbox).onUpdateMessagesFinished(true);
 
         // Verify LAST_MESSAGE_REFRESH_TIME was updated
-        assertEquals("some other last modified", dataStore.getString(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, null));
+        assertEquals(600L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
 
         // Verify we updated the inbox
         verify(inbox).refresh(true);
@@ -195,7 +187,7 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": [ {\"message_id\": \"some_mesg_id\"," +
                 "\"message_url\": \"https://go.urbanairship.com/api/user/userId/messages/message/some_mesg_id/\"," +
@@ -206,15 +198,12 @@ public class InboxJobHandlerTest {
                 "\"content_type\": \"text/html\", \"content_size\": \"128\"}]}";
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                Collections.emptyMap()
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(600L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -224,6 +213,9 @@ public class InboxJobHandlerTest {
 
         // Verify result receiver
         verify(inbox).onUpdateMessagesFinished(true);
+
+        // Verify LAST_MESSAGE_REFRESH_TIME was updated
+        assertEquals(600L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
 
         // Verify we updated the inbox
         verify(inbox).refresh(true);
@@ -241,11 +233,13 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         // Return a 500 internal server error
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_INTERNAL_ERROR, null, "{ failed }"));
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_INTERNAL_ERROR)
+                        .setResponseBody("{ failed }")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -257,7 +251,7 @@ public class InboxJobHandlerTest {
         verify(inbox).onUpdateMessagesFinished(false);
 
         // Verify LAST_MESSAGE_REFRESH_TIME was not updated
-        assertEquals("some last modified", dataStore.getString(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, null));
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
 
         // Verify we updated the inbox
         verify(inbox).refresh(true);
@@ -272,20 +266,17 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": []}";
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                Collections.emptyMap()
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(300L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         ArrayList<String> idsToDelete = new ArrayList<>();
         Message messageToDelete = createFakeMessage("id1", false, true);
@@ -304,7 +295,9 @@ public class InboxJobHandlerTest {
 
         // Return a 500 internal server error
         when(mockInboxApiClient.syncDeletedMessageState(user, "channelId", reportingsToDelete))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_INTERNAL_ERROR, null, "{ failed }"));
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_INTERNAL_ERROR)
+                        .setResponseBody("{ failed }")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -313,6 +306,9 @@ public class InboxJobHandlerTest {
         assertEquals(JobResult.SUCCESS, jobHandler.performJob(jobInfo));
 
         verify(mockMessageDao, never()).deleteMessages(idsToDelete);
+
+        // Verify LAST_MESSAGE_REFRESH_TIME was not updated
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
     }
 
     @Test
@@ -324,20 +320,17 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": []}";
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                Collections.emptyMap()
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(300L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         ArrayList<String> idsToDelete = new ArrayList<>();
         List<JsonValue> reportingsToDelete = new ArrayList<>();
@@ -355,7 +348,9 @@ public class InboxJobHandlerTest {
 
         // Return a 200 message list response with messages
         when(mockInboxApiClient.syncDeletedMessageState(user, "channelId", reportingsToDelete))
-                .thenReturn(new Response<Void>(HttpURLConnection.HTTP_OK, null));
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_OK)
+                        .setResponseBody(responseBody)
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -364,6 +359,9 @@ public class InboxJobHandlerTest {
         assertEquals(JobResult.SUCCESS, jobHandler.performJob(jobInfo));
 
         verify(mockMessageDao).deleteMessages(idsToDelete);
+
+        // Verify LAST_MESSAGE_REFRESH_TIME was not updated
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
     }
 
     @Test
@@ -375,20 +373,17 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": []}";
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                Collections.emptyMap()
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(300L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         ArrayList<String> idsToUpdate = new ArrayList<>();
         List<JsonValue> reportingsToUpdate = new ArrayList<>();
@@ -406,7 +401,9 @@ public class InboxJobHandlerTest {
 
         // Return a 500 internal server error
         when(mockInboxApiClient.syncReadMessageState(user, "channelId", reportingsToUpdate))
-                .thenReturn(new Response<Void>(HttpURLConnection.HTTP_INTERNAL_ERROR, null, "{ failed }"));
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_INTERNAL_ERROR)
+                        .setResponseBody("{ failed }")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -415,6 +412,9 @@ public class InboxJobHandlerTest {
         assertEquals(JobResult.SUCCESS, jobHandler.performJob(jobInfo));
 
         verify(mockMessageDao, never()).markMessagesReadOrigin(idsToUpdate);
+
+        // Verify LAST_MESSAGE_REFRESH_TIME was not updated
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
     }
 
     @Test
@@ -426,20 +426,17 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set the last refresh time
-        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, "some last modified");
+        dataStore.put(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 300L);
 
         String responseBody = "{ \"messages\": []}";
 
         // Return a 200 message list response with messages
-        when(mockInboxApiClient.fetchMessages(user, "channelId", "some last modified"))
-                .thenReturn(
-                        new Response<>(
-                                HttpURLConnection.HTTP_OK,
-                                JsonValue.parseString(responseBody).optMap().opt("messages").getList(),
-                                responseBody,
-                                Collections.emptyMap()
-                        )
-                );
+        when(mockInboxApiClient.fetchMessages(user, "channelId", 300L))
+                .thenReturn(new Response.Builder<JsonList>(HttpURLConnection.HTTP_OK)
+                        .setLastModified(300L)
+                        .setResponseBody(responseBody)
+                        .setResult(JsonValue.parseString(responseBody).optMap().opt("messages").getList())
+                        .build());
 
         ArrayList<String> idsToUpdate = new ArrayList<>();
         List<JsonValue> reportingsToUpdate = new ArrayList<>();
@@ -447,6 +444,7 @@ public class InboxJobHandlerTest {
         Message messageToUpdate2 = createFakeMessage("id2", false, false);
         ArrayList<MessageEntity> messagesToUpdate = new ArrayList<>();
         messagesToUpdate.add(MessageEntity.createMessageFromPayload(messageToUpdate.getMessageId(), messageToUpdate.getRawMessageJson()));
+
 
         for (MessageEntity message : messagesToUpdate) {
             reportingsToUpdate.add(message.getMessageReporting());
@@ -456,7 +454,9 @@ public class InboxJobHandlerTest {
 
         // Return a 200 message list response with messages
         when(mockInboxApiClient.syncReadMessageState(user, "channelId", reportingsToUpdate))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_OK, null, "{ \"messages\": []}"));
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_OK)
+                        .setResponseBody("{ \"messages\": []}")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_MESSAGES_UPDATE)
@@ -465,6 +465,9 @@ public class InboxJobHandlerTest {
         assertEquals(JobResult.SUCCESS, jobHandler.performJob(jobInfo));
 
         verify(mockMessageDao).markMessagesReadOrigin(idsToUpdate);
+
+        // Verify LAST_MESSAGE_REFRESH_TIME was not updated
+        assertEquals(300L, dataStore.getLong(InboxJobHandler.LAST_MESSAGE_REFRESH_TIME, 0));
     }
 
     /**
@@ -478,12 +481,10 @@ public class InboxJobHandlerTest {
         String responseBody = "{ \"user_id\": \"someUserId\", \"password\": \"someUserToken\" }";
 
         when(mockInboxApiClient.createUser("channelId"))
-                .thenReturn(
-                        new Response<>(HttpURLConnection.HTTP_CREATED,
-                                new UserCredentials("someUserId", "someUserToken"),
-                                responseBody
-                        )
-                );
+                .thenReturn(new Response.Builder<UserCredentials>(HttpURLConnection.HTTP_CREATED)
+                        .setResponseBody(responseBody)
+                        .setResult(new UserCredentials("someUserId", "someUserToken"))
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -508,12 +509,10 @@ public class InboxJobHandlerTest {
         String responseBody = "{ \"user_id\": \"someUserId\", \"password\": \"someUserToken\" }";
 
         when(mockInboxApiClient.createUser("channelId"))
-                .thenReturn(
-                        new Response<>(HttpURLConnection.HTTP_CREATED,
-                                new UserCredentials("someUserId", "someUserToken"),
-                                responseBody
-                        )
-                );
+                .thenReturn(new Response.Builder<UserCredentials>(HttpURLConnection.HTTP_CREATED)
+                        .setResponseBody(responseBody)
+                        .setResult(new UserCredentials("someUserId", "someUserToken"))
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -555,7 +554,7 @@ public class InboxJobHandlerTest {
 
         // Set a error response
         when(mockInboxApiClient.createUser("channelId"))
-                .thenReturn(new Response<UserCredentials>(HttpURLConnection.HTTP_INTERNAL_ERROR, null));
+                .thenReturn(new Response.Builder<UserCredentials>(HttpURLConnection.HTTP_INTERNAL_ERROR).build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -581,8 +580,10 @@ public class InboxJobHandlerTest {
         user.setUser("someUserId", "someUserToken");
 
         // Set a successful response
-        when(mockInboxApiClient.updateUser(user, "channelId"))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_OK, null, "{ \"ok\" }"));
+        when(mockInboxApiClient.updateUser(user,"channelId"))
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_OK)
+                        .setResponseBody("{ \"ok\" }")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -604,8 +605,10 @@ public class InboxJobHandlerTest {
         user.setUser("someUserId", "someUserToken");
 
         // Set a successful response
-        when(mockInboxApiClient.updateUser(user, "channelId"))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_OK, null, "{ \"ok\" }"));
+        when(mockInboxApiClient.updateUser(user,"channelId"))
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_OK)
+                        .setResponseBody("{ \"ok\" }")
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -645,8 +648,8 @@ public class InboxJobHandlerTest {
         when(mockChannel.getId()).thenReturn("channelId");
 
         // Set a error response
-        when(mockInboxApiClient.updateUser(user, "channelId"))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_INTERNAL_ERROR, null));
+        when(mockInboxApiClient.updateUser(user,"channelId"))
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_INTERNAL_ERROR).build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)
@@ -675,14 +678,17 @@ public class InboxJobHandlerTest {
 
         // Set error response for user update
         when(mockInboxApiClient.updateUser(user, channelId))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_UNAUTHORIZED, null));
+                .thenReturn(new Response.Builder<Void>(HttpURLConnection.HTTP_UNAUTHORIZED).build());
 
         // Set success response for user create
         UserCredentials result = new UserCredentials(recreatedUserId, recreatedToken);
         String responseBody = String.format("{ \"user_id\": \"%s\", \"password\": \"%s\" }",
                 recreatedUserId, recreatedToken);
         when(mockInboxApiClient.createUser(channelId))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_CREATED, result, responseBody));
+                .thenReturn(new Response.Builder<UserCredentials>(HttpURLConnection.HTTP_CREATED)
+                        .setResponseBody(responseBody)
+                        .setResult(result)
+                        .build());
 
         JobInfo jobInfo = JobInfo.newBuilder()
                                  .setAction(InboxJobHandler.ACTION_RICH_PUSH_USER_UPDATE)

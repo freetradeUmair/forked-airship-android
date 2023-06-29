@@ -21,21 +21,16 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.javascript.NativeBridge;
 import com.urbanairship.util.UriUtils;
 
 import java.lang.ref.WeakReference;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Web Chrome Client that enables full screen video.
  */
 public class AirshipWebChromeClient extends WebChromeClient {
-
-    /** Special schemes for URLs that don't have a host. */
-    private final static List<String> SPECIAL_SCHEMES = Arrays.asList("tel", "sms", "mailto");
 
     private final WeakReference<Activity> weakActivity;
     private View customView;
@@ -106,9 +101,7 @@ public class AirshipWebChromeClient extends WebChromeClient {
                     if (url != null) {
                         Uri uri = Uri.parse(url);
 
-                        boolean isActionUrl = NativeBridge.UA_ACTION_SCHEME.equals(uri.getScheme());
-                        boolean hasSpecialScheme = SPECIAL_SCHEMES.contains(uri.getScheme());
-                        if ((!hasSpecialScheme && uri.getHost() == null) || isActionUrl) {
+                        if (uri.getHost() == null || NativeBridge.UA_ACTION_SCHEME.equals(uri.getScheme())) {
                             return false;
                         }
 
@@ -117,7 +110,7 @@ public class AirshipWebChromeClient extends WebChromeClient {
                         try {
                             view.getContext().startActivity(intent);
                         } catch (ActivityNotFoundException e) {
-                            UALog.e(e);
+                            Logger.error(e);
                         }
                     }
                     return true;

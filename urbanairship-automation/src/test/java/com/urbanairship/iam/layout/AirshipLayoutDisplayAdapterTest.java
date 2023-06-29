@@ -6,11 +6,11 @@ import com.urbanairship.BaseTestCase;
 import com.urbanairship.ShadowAirshipExecutorsLegacy;
 import com.urbanairship.TestActivity;
 import com.urbanairship.TestApplication;
+import com.urbanairship.android.layout.BasePayload;
 import com.urbanairship.android.layout.ThomasListener;
 import com.urbanairship.android.layout.display.DisplayArgs;
 import com.urbanairship.android.layout.display.DisplayException;
 import com.urbanairship.android.layout.display.DisplayRequest;
-import com.urbanairship.android.layout.info.LayoutInfo;
 import com.urbanairship.android.layout.reporting.FormData;
 import com.urbanairship.android.layout.reporting.FormInfo;
 import com.urbanairship.android.layout.reporting.LayoutData;
@@ -23,9 +23,8 @@ import com.urbanairship.iam.InAppMessageWebViewClient;
 import com.urbanairship.iam.ResolutionInfo;
 import com.urbanairship.iam.assets.Assets;
 import com.urbanairship.iam.events.InAppReportingEvent;
-import com.urbanairship.UrlAllowList;
+import com.urbanairship.js.UrlAllowList;
 import com.urbanairship.json.JsonException;
-import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonValue;
 import com.urbanairship.util.Network;
 import com.urbanairship.webkit.AirshipWebViewClient;
@@ -34,18 +33,19 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.LooperMode;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.ObjectsCompat;
+import androidx.core.util.Supplier;
 import androidx.lifecycle.Lifecycle;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -135,8 +135,10 @@ import static org.mockito.Mockito.when;
                 "                  \"height\":\"100%\"\n" +
                 "               },\n" +
                 "               \"view\":{\n" +
-                "                  \"type\":\"web_view\",\n" +
-                "                  \"url\":\"https://some-youtube-url\"\n" +
+                "                  \"type\":\"media\",\n" +
+                "                  \"media_fit\":\"center\",\n" +
+                "                  \"url\":\"https://some-youtube-url\",\n" +
+                "                  \"media_type\":\"youtube\"\n" +
                 "               }\n" +
                 "            },\n" +
                 "            {\n" +
@@ -289,27 +291,9 @@ import static org.mockito.Mockito.when;
         LayoutData layoutData = mock(LayoutData.class);
         ThomasListener listener = prepareListenerTest();
 
-        listener.onButtonTap("button id", null, layoutData);
+        listener.onButtonTap("button id", layoutData);
 
-        InAppReportingEvent expected = InAppReportingEvent.buttonTap(scheduleId, message, "button id", null)
-                                                          .setLayoutData(layoutData);
-
-        verify(displayHandler).addEvent(eq(expected));
-    }
-
-    @Test
-    public void testButtonTapWithMetadata() {
-        LayoutData layoutData = mock(LayoutData.class);
-        ThomasListener listener = prepareListenerTest();
-
-        JsonValue metadata = JsonMap.newBuilder()
-                                    .put("foo", "bar")
-                                    .build()
-                                    .toJsonValue();
-
-        listener.onButtonTap("button id", metadata, layoutData);
-
-        InAppReportingEvent expected = InAppReportingEvent.buttonTap(scheduleId, message, "button id", metadata)
+        InAppReportingEvent expected = InAppReportingEvent.buttonTap(scheduleId, message, "button id")
                                                           .setLayoutData(layoutData);
 
         verify(displayHandler).addEvent(eq(expected));
@@ -379,34 +363,6 @@ import static org.mockito.Mockito.when;
     }
 
     @Test
-    public void testPagerGesture() {
-        LayoutData layoutData = mock(LayoutData.class);
-        ThomasListener listener = prepareListenerTest();
-        JsonValue metadata = JsonValue.wrap("foo");
-
-        listener.onPagerGesture("gesture ID", metadata, layoutData);
-
-        InAppReportingEvent expected = InAppReportingEvent.pagerGesture(scheduleId, message, "gesture ID", metadata)
-                                                          .setLayoutData(layoutData);
-
-        verify(displayHandler).addEvent(eq(expected));
-    }
-
-    @Test
-    public void testPagerAutomatedAction() {
-        LayoutData layoutData = mock(LayoutData.class);
-        ThomasListener listener = prepareListenerTest();
-        JsonValue metadata = JsonValue.wrap("foo");
-
-        listener.onPagerAutomatedAction("action ID", metadata, layoutData);
-
-        InAppReportingEvent expected = InAppReportingEvent.pagerAction(scheduleId, message, "action ID", metadata)
-                                                          .setLayoutData(layoutData);
-
-        verify(displayHandler).addEvent(eq(expected));
-    }
-
-    @Test
     public void testFormDisplay() {
         LayoutData layoutData = mock(LayoutData.class);
         ThomasListener listener = prepareListenerTest();
@@ -425,7 +381,7 @@ import static org.mockito.Mockito.when;
         LayoutData layoutData = mock(LayoutData.class);
         ThomasListener listener = prepareListenerTest();
 
-        Set<FormData<?>> children = Collections.singleton(new FormData.Score("score_id", 1, true, null, null));
+        Collection<FormData<?>> children = Collections.singleton(new FormData.Score("score_id",1));
         FormData.BaseForm formData = new FormData.Nps("form_id", "response type", "score_id", children);
 
         listener.onFormResult(formData, layoutData);
@@ -494,12 +450,12 @@ import static org.mockito.Mockito.when;
         DisplayException exception;
 
         @Override
-        public DisplayRequest prepareDisplay(@NonNull LayoutInfo layoutInfo) throws DisplayException {
+        public DisplayRequest prepareDisplay(@NonNull BasePayload basePayload) throws DisplayException {
             if (exception != null) {
                 throw exception;
             }
 
-            return new DisplayRequest(layoutInfo, (context, args) -> {
+            return new DisplayRequest(basePayload, (context, args) -> {
                 this.displayArgs = args;
             });
         }

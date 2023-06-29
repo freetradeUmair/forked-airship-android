@@ -31,7 +31,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineDispatcher
@@ -286,27 +285,8 @@ class PreferenceCenterViewModelTest {
                 assertThat(awaitItem()).isEqualTo(State.Loading)
                 assertThat(awaitItem()).isInstanceOf(State.Content::class.java)
 
-                verify(channel).fetchSubscriptionLists()
-                verify(contact).fetchSubscriptionLists()
-
-                cancel()
-            }
-        }
-    }
-
-    @Test
-    fun handleNamedUserIdChange() = runBlocking {
-        val namedUserIdFlow = MutableStateFlow("")
-        viewModel(namedUserIdFlow = namedUserIdFlow).run {
-            states.test {
-                handle(Action.Refresh)
-                assertThat(awaitItem()).isEqualTo(State.Loading)
-                assertThat(awaitItem()).isInstanceOf(State.Content::class.java)
-
-                namedUserIdFlow.emit("some other user")
-
-                assertThat(awaitItem()).isEqualTo(State.Loading)
-                assertThat(awaitItem()).isInstanceOf(State.Content::class.java)
+                verify(channel).getSubscriptionLists(true)
+                verify(contact).getSubscriptionLists(true)
 
                 cancel()
             }
@@ -325,8 +305,8 @@ class PreferenceCenterViewModelTest {
                 assertThat(awaitItem()).isEqualTo(State.Loading)
                 assertThat(awaitItem()).isInstanceOf(State.Content::class.java)
 
-                verify(channel, never()).fetchSubscriptionLists()
-                verify(contact).fetchSubscriptionLists()
+                verify(channel, never()).getSubscriptionLists(any())
+                verify(contact).getSubscriptionLists(true)
 
                 cancel()
             }
@@ -345,8 +325,8 @@ class PreferenceCenterViewModelTest {
                 assertThat(awaitItem()).isEqualTo(State.Loading)
                 assertThat(awaitItem()).isInstanceOf(State.Content::class.java)
 
-                verify(channel).fetchSubscriptionLists()
-                verify(contact, never()).fetchSubscriptionLists()
+                verify(channel).getSubscriptionLists(true)
+                verify(contact, never()).getSubscriptionLists(any())
 
                 cancel()
             }
@@ -384,7 +364,7 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, editor) {
-                verify(channel).fetchSubscriptionLists()
+                verify(channel).getSubscriptionLists(true)
                 verify(channel).editSubscriptionLists()
                 verify(editor).mutate(item.subscriptionId, true)
                 verify(editor).apply()
@@ -425,7 +405,7 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, editor) {
-                verify(channel).fetchSubscriptionLists()
+                verify(channel).getSubscriptionLists(true)
                 verify(channel).editSubscriptionLists()
                 verify(editor).mutate(item.subscriptionId, false)
                 verify(editor).apply()
@@ -471,15 +451,13 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, contact, editor) {
-                verify(contact).namedUserIdFlow
-
-                verify(contact).fetchSubscriptionLists()
+                verify(contact).getSubscriptionLists(true)
                 verify(contact).editSubscriptionLists()
                 verify(editor).mutate(item.subscriptionId, item.scopes, true)
                 verify(editor).apply()
 
                 Mockito.verifyNoMoreInteractions(channel, contact, editor)
-                verify(channel, never()).fetchSubscriptionLists()
+                verify(channel, never()).getSubscriptionLists(any())
                 verify(channel, never()).editSubscriptionLists()
             }
         }
@@ -530,16 +508,13 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, contact, editor) {
-                verify(contact).namedUserIdFlow
-
-                verify(contact).fetchSubscriptionLists()
+                verify(contact).getSubscriptionLists(true)
                 verify(contact).editSubscriptionLists()
-
                 verify(editor).mutate(item.subscriptionId, item.scopes, false)
                 verify(editor).apply()
 
                 verify(channel, never()).editSubscriptionLists()
-                verify(channel, never()).fetchSubscriptionLists()
+                verify(channel, never()).getSubscriptionLists(any())
 
                 Mockito.verifyNoMoreInteractions(channel, contact, editor)
             }
@@ -583,15 +558,13 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, contact, editor) {
-                verify(contact).namedUserIdFlow
-
-                verify(contact).fetchSubscriptionLists()
+                verify(contact).getSubscriptionLists(true)
                 verify(contact).editSubscriptionLists()
                 verify(editor).mutate(item.subscriptionId, component.scopes, true)
                 verify(editor).apply()
 
                 Mockito.verifyNoMoreInteractions(channel, contact, editor)
-                verify(channel, never()).fetchSubscriptionLists()
+                verify(channel, never()).getSubscriptionLists(any())
                 verify(channel, never()).editSubscriptionLists()
             }
         }
@@ -627,8 +600,6 @@ class PreferenceCenterViewModelTest {
             val item = CONTACT_SUBSCRIPTION_GROUP_ITEM_4
 
             states.test {
-                verify(contact).namedUserIdFlow
-
                 assertThat(awaitItem()).isEqualTo(State.Loading)
 
                 handle(Action.Refresh)
@@ -648,12 +619,12 @@ class PreferenceCenterViewModelTest {
             }
 
             inOrder(channel, contact, editor) {
-                verify(contact).fetchSubscriptionLists()
+                verify(contact).getSubscriptionLists(true)
                 verify(contact).editSubscriptionLists()
                 verify(editor).mutate(item.subscriptionId, unsubscribeScopes, false)
                 verify(editor).apply()
 
-                verify(channel, never()).fetchSubscriptionLists()
+                verify(channel, never()).getSubscriptionLists(any())
                 verify(channel, never()).editSubscriptionLists()
 
                 Mockito.verifyNoMoreInteractions(channel, contact, editor)
@@ -779,29 +750,27 @@ class PreferenceCenterViewModelTest {
         mockChannel: (AirshipChannel.() -> Unit)? = {},
         mockContact: (Contact.() -> Unit)? = {},
         mockConditionStateMonitor: (ConditionStateMonitor.() -> Unit)? = {},
-        conditionState: Condition.State = Condition.State(isOptedIn = true),
-        namedUserIdFlow: StateFlow<String?> = MutableStateFlow(null)
+        conditionState: Condition.State = Condition.State(isOptedIn = true)
     ): PreferenceCenterViewModel {
         preferenceCenter = if (mockPreferenceCenter == null) {
             mock {}
         } else {
             mock<PreferenceCenter> {
-                onBlocking { getConfig(preferenceCenterId) } doReturn config
+                on { getConfig(preferenceCenterId) } doReturn pendingResultOf(config)
             }.also(mockPreferenceCenter::invoke)
         }
         channel = if (mockChannel == null) {
             mock {}
         } else {
             mock<AirshipChannel> {
-                onBlocking { fetchSubscriptionLists() } doReturn Result.success(channelSubscriptions)
+                on { getSubscriptionLists(true) } doReturn pendingResultOf(channelSubscriptions)
             }.also(mockChannel::invoke)
         }
         contact = if (mockContact == null) {
             mock {}
         } else {
             mock<Contact> {
-                onBlocking { fetchSubscriptionLists() } doReturn Result.success(contactSubscriptions)
-                on { this.namedUserIdFlow } doReturn namedUserIdFlow
+                on { getSubscriptionLists(true) } doReturn pendingResultOf(contactSubscriptions)
             }.also(mockContact::invoke)
         }
         conditionMonitor = if (mockConditionStateMonitor == null) {

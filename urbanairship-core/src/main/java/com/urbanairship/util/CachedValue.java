@@ -1,17 +1,11 @@
-/* Copyright Airship and Contributors */
-
 package com.urbanairship.util;
-
-import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
-import androidx.core.util.Predicate;
 
 /**
  * Caches a value in memory with an expiration.
- *
  * @param <T>
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
@@ -30,26 +24,17 @@ public class CachedValue<T> {
         this.clock = clock;
     }
 
-    public void set(@Nullable T value, long expiryDateMs) {
+    public void set(@Nullable T value, long expiresMs) {
         synchronized (lock) {
             this.value = value;
-            this.expiration = expiryDateMs;
+            this.expiration = clock.currentTimeMillis() + expiresMs;
         }
     }
 
-    public void expire() {
+    public void invalidate() {
         synchronized (lock) {
             this.value = null;
             this.expiration = 0;
-        }
-    }
-
-    public void expireIf(Predicate<T> predicate) {
-        synchronized (lock) {
-            if (value != null && predicate.test(value)) {
-                this.value = null;
-                this.expiration = 0;
-            }
         }
     }
 
@@ -63,5 +48,6 @@ public class CachedValue<T> {
             return value;
         }
     }
+
 
 }

@@ -1,7 +1,7 @@
 package com.urbanairship.preferencecenter.data
 
 import com.urbanairship.json.JsonMap
-import com.urbanairship.json.jsonMapOf
+import com.urbanairship.preferencecenter.util.jsonMapOf
 
 data class Options(
     val mergeChannelDataToContact: Boolean

@@ -7,16 +7,18 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.urbanairship.Autopilot;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.analytics.Analytics;
 import com.urbanairship.automation.InAppAutomation;
 import com.urbanairship.iam.events.InAppReportingEvent;
+import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonValue;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
+import androidx.room.util.StringUtil;
 
 /**
  * Display handler for in-app message displays.
@@ -86,7 +88,7 @@ public class DisplayHandler implements Parcelable {
                 JsonValue reportingContext = JsonValue.parseString(in.readString());
                 return new DisplayHandler(scheduleId == null ? "" : scheduleId, isReportingAllowed, campaigns, reportingContext);
             } catch (Exception e) {
-                UALog.e(e, "failed to create display handler");
+                Logger.error(e, "failed to create display handler");
                 return new DisplayHandler("", false, JsonValue.NULL, JsonValue.NULL);
             }
         }
@@ -109,7 +111,7 @@ public class DisplayHandler implements Parcelable {
     public void finished(@NonNull ResolutionInfo resolutionInfo, long displayMilliseconds) {
         InAppAutomation inAppAutomation = getInAppAutomation();
         if (inAppAutomation == null) {
-            UALog.e("Takeoff not called. Unable to finish display for schedule: %s", scheduleId);
+            Logger.error("Takeoff not called. Unable to finish display for schedule: %s", scheduleId);
             return;
         }
 
@@ -134,7 +136,7 @@ public class DisplayHandler implements Parcelable {
     public void notifyFinished(@NonNull ResolutionInfo resolutionInfo) {
         InAppAutomation inAppAutomation = getInAppAutomation();
         if (inAppAutomation == null) {
-            UALog.e("Takeoff not called. Unable to finish display for schedule: %s", scheduleId);
+            Logger.error("Takeoff not called. Unable to finish display for schedule: %s", scheduleId);
             return;
         }
 
@@ -152,7 +154,7 @@ public class DisplayHandler implements Parcelable {
         if (isReportingAllowed) {
             Analytics analytics = getAnalytics();
             if (analytics == null) {
-                UALog.e("Takeoff not called. Unable to add event for schedule: %s", scheduleId);
+                Logger.error("Takeoff not called. Unable to add event for schedule: %s", scheduleId);
                 return;
             }
 
@@ -168,7 +170,7 @@ public class DisplayHandler implements Parcelable {
     public void cancelFutureDisplays() {
         InAppAutomation inAppAutomation = getInAppAutomation();
         if (inAppAutomation == null) {
-            UALog.e("Takeoff not called. Unable to cancel displays for schedule: %s", scheduleId);
+            Logger.error("Takeoff not called. Unable to cancel displays for schedule: %s", scheduleId);
             return;
         }
 
@@ -188,7 +190,7 @@ public class DisplayHandler implements Parcelable {
 
         InAppAutomation inAppAutomation = getInAppAutomation();
         if (inAppAutomation == null) {
-            UALog.e("Takeoff not called. Unable to request display lock.");
+            Logger.error("Takeoff not called. Unable to request display lock.");
             return false;
         }
 

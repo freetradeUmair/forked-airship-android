@@ -9,7 +9,7 @@ import androidx.annotation.Nullable;
 
 import com.urbanairship.AirshipComponent;
 import com.urbanairship.AirshipComponentGroups;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.json.JsonMap;
 
@@ -92,12 +92,9 @@ class ModuleAdapter {
 
             case Modules.PREFERENCE_CENTER_MODULE:
                 return getComponentsByGroup(AirshipComponentGroups.PREFERENCE_CENTER);
-
-            case Modules.EXPERIMENT_MODULE:
-                return getComponentsByGroup(AirshipComponentGroups.EXPERIMENT);
         }
 
-        UALog.v("Unable to find module: %s", module);
+        Logger.verbose("Unable to find module: %s", module);
         return Collections.emptyList();
     }
 

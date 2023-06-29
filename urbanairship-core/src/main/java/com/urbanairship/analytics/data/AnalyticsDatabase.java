@@ -2,7 +2,7 @@ package com.urbanairship.analytics.data;
 
 import android.content.Context;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.config.AirshipRuntimeConfig;
 import com.urbanairship.json.JsonTypeConverters;
 
@@ -134,7 +134,7 @@ public abstract class AnalyticsDatabase extends RoomDatabase {
 
         if (oldDb.exists() && !newDb.exists()) {
             if (!oldDb.renameTo(newDb)) {
-                UALog.w("Failed to move analytics db: %s -> %s", oldDb.getPath(), newDb.getPath());
+                Logger.warn("Failed to move analytics db: %s -> %s", oldDb.getPath(), newDb.getPath());
             }
         }
 

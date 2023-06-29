@@ -5,14 +5,16 @@ package com.urbanairship.actions;
 import android.content.Intent;
 import android.net.Uri;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.base.Supplier;
 import com.urbanairship.push.PushManager;
 import com.urbanairship.push.PushMessage;
 import com.urbanairship.util.Checks;
+import com.urbanairship.util.UriUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 /**
@@ -67,7 +69,7 @@ public class DeepLinkAction extends Action {
         Checks.checkNotNull(deepLink, "Missing feature.");
         Checks.checkNotNull(airship, "Missing airship.");
 
-        UALog.i("Deep linking: %s", deepLink);
+        Logger.info("Deep linking: %s", deepLink);
         if (!airship.deepLink(deepLink)) {
             // Fallback to intent launching
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepLink))

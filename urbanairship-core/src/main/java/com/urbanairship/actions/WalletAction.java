@@ -4,14 +4,12 @@ package com.urbanairship.actions;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
-import com.urbanairship.UrlAllowList;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
-import androidx.core.util.Supplier;
 
 /**
  * Action for opening Android Pay deep links.
@@ -41,22 +39,10 @@ public class WalletAction extends OpenExternalUrlAction {
     @NonNull
     public static final String DEFAULT_REGISTRY_SHORT_NAME = "^w";
 
-    /**
-     * Default constructor.
-     */
-    public WalletAction() {
-        super();
-    }
-
-    @VisibleForTesting
-    WalletAction(@NonNull Supplier<UrlAllowList> allowListSupplier) {
-        super(allowListSupplier);
-    }
-
     @NonNull
     @Override
     public ActionResult perform(@NonNull ActionArguments arguments) {
-        UALog.i("Processing Wallet adaptive link.");
+        Logger.info("Processing Wallet adaptive link.");
 
         Intent intent = new Intent(UAirship.getApplicationContext(), WalletLoadingActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

@@ -22,7 +22,6 @@ import androidx.preference.CheckBoxPreference;
 /**
  * Airship check box preference.
  */
-@Deprecated
 public abstract class UACheckBoxPreference extends CheckBoxPreference {
 
     protected boolean isChecked = false;

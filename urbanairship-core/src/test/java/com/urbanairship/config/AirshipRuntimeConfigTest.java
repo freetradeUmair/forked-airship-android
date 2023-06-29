@@ -2,7 +2,6 @@ package com.urbanairship.config;
 
 import com.urbanairship.AirshipConfigOptions;
 import com.urbanairship.BaseTestCase;
-import com.urbanairship.TestRequestSession;
 import com.urbanairship.UAirship;
 
 import org.junit.Before;
@@ -23,9 +22,20 @@ public class AirshipRuntimeConfigTest extends BaseTestCase {
     @Before
     public void setup() {
         urlConfig = AirshipUrlConfig.newBuilder().build();
-        configProvider = () -> urlConfig;
+        configProvider = new AirshipUrlConfigProvider() {
+            @NonNull
+            @Override
+            public AirshipUrlConfig getConfig() {
+                return urlConfig;
+            }
+        };
         configOptions = AirshipConfigOptions.newBuilder().build();
-        runtimeConfig = new  AirshipRuntimeConfig(() -> platform, configOptions, configProvider, new TestRequestSession());
+        runtimeConfig = new  AirshipRuntimeConfig(new PlatformProvider() {
+            @Override
+            public int getPlatform() {
+                return platform;
+            }
+        }, configOptions, configProvider);
     }
 
     @Test

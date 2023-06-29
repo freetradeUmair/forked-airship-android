@@ -10,7 +10,7 @@ Airship SDK for Android.
 
 ## Requirements
 - minSdkVersion 21
-- compileSdkVersion 33
+- compileSdkVersion 31
 
 ## Quickstart
 
@@ -18,7 +18,7 @@ Airship SDK for Android.
 
 ```
    dependencies {
-     def airshipVersion = "17.0.1"
+     def airshipVersion = "16.7.5"
 
      // FCM push provider
      implementation "com.urbanairship.android:urbanairship-fcm:$airshipVersion"
@@ -28,9 +28,6 @@ Airship SDK for Android.
 
      // In-App Automation
      implementation "com.urbanairship.android:urbanairship-automation:$airshipVersion"
-     
-     // Live Updates
-     implementation "com.urbanairship.android:urbanairship-live-update:$airshipVersion"
    }
 ```
 

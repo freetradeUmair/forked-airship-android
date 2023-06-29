@@ -17,7 +17,6 @@ import androidx.annotation.Nullable;
 /**
  * CheckboxPreference to enable/disable analytic events.
  */
-@Deprecated
 public class AnalyticsEnablePreference extends UACheckBoxPreference {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)

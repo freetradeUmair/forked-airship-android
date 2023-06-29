@@ -12,7 +12,7 @@ import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.provider.Settings;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 import com.urbanairship.app.GlobalActivityMonitor;
 import com.urbanairship.app.SimpleApplicationListener;
@@ -23,6 +23,7 @@ import com.urbanairship.permission.Permission;
 import com.urbanairship.permission.PermissionRequestResult;
 import com.urbanairship.permission.PermissionStatus;
 import com.urbanairship.permission.PermissionsManager;
+import com.urbanairship.push.AirshipNotificationManager;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 /**
  * An action that prompts for permission.
@@ -220,7 +222,7 @@ public class PromptPermissionAction extends Action {
                 context.startActivity(intent);
                 return;
             } catch (ActivityNotFoundException e) {
-                UALog.d(e, "Failed to launch notification settings.");
+                Logger.debug(e, "Failed to launch notification settings.");
             }
         }
 
@@ -233,7 +235,7 @@ public class PromptPermissionAction extends Action {
             context.startActivity(intent);
             return;
         } catch (ActivityNotFoundException e) {
-            UALog.d(e, "Failed to launch notification settings.");
+            Logger.debug(e, "Failed to launch notification settings.");
         }
 
         navigateToAppSettings();
@@ -249,7 +251,7 @@ public class PromptPermissionAction extends Action {
         try {
             context.startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            UALog.e(e, "Unable to launch settings details activity.");
+            Logger.error(e, "Unable to launch settings details activity.");
         }
 
         intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS)
@@ -260,7 +262,7 @@ public class PromptPermissionAction extends Action {
         try {
             context.startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            UALog.e(e, "Unable to launch settings activity.");
+            Logger.error(e, "Unable to launch settings activity.");
         }
     }
 

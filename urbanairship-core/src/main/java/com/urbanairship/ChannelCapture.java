@@ -116,12 +116,12 @@ public class ChannelCapture extends AirshipComponent {
             try {
                 clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             } catch (Exception e) {
-                UALog.e(e, "Unable to initialize clipboard manager: ");
+                Logger.error(e, "Unable to initialize clipboard manager: ");
             }
         }
 
         if (clipboardManager == null) {
-            UALog.d("Unable to attempt channel capture, clipboard manager uninitialized");
+            Logger.debug("Unable to attempt channel capture, clipboard manager uninitialized");
             return;
         }
 
@@ -138,11 +138,11 @@ public class ChannelCapture extends AirshipComponent {
                 public void run() {
                     ClipData clipData = ClipData.newPlainText("UA Channel ID", channelIdForClipboard);
                     clipboardManager.setPrimaryClip(clipData);
-                    UALog.d("Channel ID copied to clipboard");
+                    Logger.debug("Channel ID copied to clipboard");
                 }
             });
         } catch (Exception e) {
-            UALog.w(e, "Channel capture failed! Unable to copy Channel ID to clipboard.");
+            Logger.warn(e, "Channel capture failed! Unable to copy Channel ID to clipboard.");
         }
 
     }

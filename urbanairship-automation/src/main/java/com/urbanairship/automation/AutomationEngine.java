@@ -18,7 +18,7 @@ import androidx.annotation.WorkerThread;
 import androidx.core.util.Consumer;
 
 import com.urbanairship.CancelableOperation;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.PendingResult;
 import com.urbanairship.Predicate;
 import com.urbanairship.PreferenceDataStore;
@@ -52,6 +52,7 @@ import com.urbanairship.reactive.Subject;
 import com.urbanairship.reactive.Subscriber;
 import com.urbanairship.reactive.Subscription;
 import com.urbanairship.util.AirshipHandlerThread;
+import com.urbanairship.util.Network;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -123,20 +124,20 @@ public class AutomationEngine {
         @Override
         public void onForeground(long time) {
             AutomationEngine.this.onEventAdded(JsonValue.NULL, Trigger.LIFE_CYCLE_FOREGROUND, 1.00);
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
 
         @Override
         public void onBackground(long time) {
             AutomationEngine.this.onEventAdded(JsonValue.NULL, Trigger.LIFE_CYCLE_BACKGROUND, 1.00);
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
     };
 
     private final ActivityListener activityListener = new SimpleActivityListener() {
         @Override
         public void onActivityResumed(@NonNull Activity activity) {
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
     };
 
@@ -146,7 +147,7 @@ public class AutomationEngine {
             regionId = regionEvent.toJsonValue().optMap().opt("region_id").getString();
             int type = regionEvent.getBoundaryEvent() == RegionEvent.BOUNDARY_EVENT_ENTER ? Trigger.REGION_ENTER : Trigger.REGION_EXIT;
             onEventAdded(regionEvent.toJsonValue(), type, 1.00);
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
 
         @Override
@@ -163,7 +164,7 @@ public class AutomationEngine {
         public void onScreenTracked(@NonNull String screenName) {
             screen = screenName;
             onEventAdded(JsonValue.wrap(screenName), Trigger.SCREEN_VIEW, 1.00);
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
     };
 
@@ -304,7 +305,7 @@ public class AutomationEngine {
         onEventAdded(JsonValue.NULL, Trigger.LIFE_CYCLE_APP_INIT, 1.00);
 
         isStarted = true;
-        checkPendingSchedules();
+        onScheduleConditionsChanged();
     }
 
 
@@ -318,7 +319,7 @@ public class AutomationEngine {
         pausedManager.setPaused(isPaused);
 
         if (!isPaused && isStarted) {
-            checkPendingSchedules();
+            onScheduleConditionsChanged();
         }
     }
 
@@ -357,7 +358,7 @@ public class AutomationEngine {
                 cleanSchedules();
 
                 if (dao.getScheduleCount() >= SCHEDULE_LIMIT) {
-                    UALog.e("AutomationEngine - Unable to insert schedule due to schedule exceeded limit.");
+                    Logger.error("AutomationEngine - Unable to insert schedule due to schedule exceeded limit.");
                     pendingResult.setResult(false);
                     return;
                 }
@@ -368,7 +369,7 @@ public class AutomationEngine {
 
                 notifyNewSchedule(Collections.<Schedule<? extends ScheduleData>>singletonList(schedule));
 
-                UALog.v("Scheduled entries: %s", schedule);
+                Logger.verbose("Scheduled entries: %s", schedule);
                 pendingResult.setResult(true);
             }
         });
@@ -392,7 +393,7 @@ public class AutomationEngine {
                 cleanSchedules();
 
                 if (dao.getScheduleCount() + schedules.size() > SCHEDULE_LIMIT) {
-                    UALog.e("AutomationDataManager - Unable to insert schedule due to schedule exceeded limit.");
+                    Logger.error("AutomationDataManager - Unable to insert schedule due to schedule exceeded limit.");
                     pendingResult.setResult(false);
                     return;
                 }
@@ -409,7 +410,7 @@ public class AutomationEngine {
                 Collection<Schedule<? extends ScheduleData>> result = convertSchedulesUnknownTypes(entries);
                 notifyNewSchedule(result);
 
-                UALog.v("Scheduled entries: %s", result);
+                Logger.verbose("Scheduled entries: %s", result);
                 pendingResult.setResult(true);
             }
         });
@@ -436,7 +437,7 @@ public class AutomationEngine {
                     return;
                 }
 
-                UALog.v("Cancelled schedules: %s", ids);
+                Logger.verbose("Cancelled schedules: %s", ids);
 
                 dao.deleteSchedules(entries);
                 notifyCancelledSchedule(entries);
@@ -466,7 +467,7 @@ public class AutomationEngine {
                     ids.add(entry.schedule.scheduleId);
                 }
 
-                UALog.v("Cancelled schedules: %s", ids);
+                Logger.verbose("Cancelled schedules: %s", ids);
                 dao.deleteSchedules(entries);
                 notifyCancelledSchedule(entries);
                 cancelScheduleAlarms(ids);
@@ -493,7 +494,7 @@ public class AutomationEngine {
                 List<FullSchedule> entries = dao.getSchedulesWithGroup(group);
 
                 if (entries.isEmpty()) {
-                    UALog.v("Failed to cancel schedule group: %s", group);
+                    Logger.verbose("Failed to cancel schedule group: %s", group);
                     pendingResult.setResult(false);
                 } else {
                     dao.deleteSchedules(entries);
@@ -634,7 +635,7 @@ public class AutomationEngine {
                 FullSchedule entry = dao.getSchedule(scheduleId);
 
                 if (entry == null) {
-                    UALog.e("AutomationEngine - Schedule no longer exists. Unable to edit: %s", scheduleId);
+                    Logger.error("AutomationEngine - Schedule no longer exists. Unable to edit: %s", scheduleId);
                     pendingResult.setResult(false);
                     return;
                 }
@@ -668,7 +669,7 @@ public class AutomationEngine {
                     subscribeStateObservables(entry, stateChangeTimeStamp);
                 }
 
-                UALog.v("Updated schedule: %s", scheduleId);
+                Logger.verbose("Updated schedule: %s", scheduleId);
                 pendingResult.setResult(true);
             }
         });
@@ -681,17 +682,7 @@ public class AutomationEngine {
      */
     public void checkPendingSchedules() {
         if (isStarted) {
-            backgroundHandler.post(() -> {
-                List<FullSchedule> entries = dao.getSchedulesWithStates(ScheduleState.WAITING_SCHEDULE_CONDITIONS);
-                if (entries.isEmpty()) {
-                    return;
-                }
-
-                sortSchedulesByPriority(entries);
-                for (FullSchedule entry : entries) {
-                    attemptExecution(entry);
-                }
-            });
+            onScheduleConditionsChanged();
         }
     }
 
@@ -920,7 +911,7 @@ public class AutomationEngine {
         }
 
         dao.updateSchedules(entries);
-        UALog.v("AutomationEngine: Schedules reset state to STATE_PREPARING_SCHEDULE: %s", entries);
+        Logger.verbose("AutomationEngine: Schedules reset state to STATE_PREPARING_SCHEDULE: %s", entries);
     }
 
     /**
@@ -954,7 +945,7 @@ public class AutomationEngine {
         }
 
         if (!schedulesToDelete.isEmpty()) {
-            UALog.v("Deleting finished schedules: %s", schedulesToDelete);
+            Logger.verbose("Deleting finished schedules: %s", schedulesToDelete);
             dao.deleteSchedules(schedulesToDelete);
         }
     }
@@ -1062,6 +1053,26 @@ public class AutomationEngine {
     }
 
     /**
+     * Called when one of the schedule conditions changes.
+     */
+    private void onScheduleConditionsChanged() {
+        backgroundHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                List<FullSchedule> entries = dao.getSchedulesWithStates(ScheduleState.WAITING_SCHEDULE_CONDITIONS);
+                if (entries.isEmpty()) {
+                    return;
+                }
+
+                sortSchedulesByPriority(entries);
+                for (FullSchedule entry : entries) {
+                    attemptExecution(entry);
+                }
+            }
+        });
+    }
+
+    /**
      * For a given event, retrieves and iterates through any relevant triggers.
      *
      * @param json The relevant event data.
@@ -1072,7 +1083,7 @@ public class AutomationEngine {
         backgroundHandler.post(new Runnable() {
             @Override
             public void run() {
-                UALog.d("Updating triggers with type: %s", type);
+                Logger.debug("Updating triggers with type: %s", type);
                 List<TriggerEntity> triggerEntities = dao.getActiveTriggers(type);
                 if (triggerEntities.isEmpty()) {
                     return;
@@ -1261,7 +1272,7 @@ public class AutomationEngine {
                                 case AutomationDriver.PREPARE_RESULT_CONTINUE:
                                     updateExecutionState(entry, ScheduleState.WAITING_SCHEDULE_CONDITIONS);
                                     dao.update(entry);
-                                    checkPendingSchedules();
+                                    attemptExecution(entry);
                                     break;
 
                                 case AutomationDriver.PREPARE_RESULT_SKIP:
@@ -1293,9 +1304,9 @@ public class AutomationEngine {
         try {
             return ScheduleConverters.convert(entry);
         } catch (ClassCastException e) {
-            UALog.e(e, "Exception converting entity to schedule %s", entry.schedule.scheduleId);
+            Logger.error(e, "Exception converting entity to schedule %s", entry.schedule.scheduleId);
         } catch (Exception e) {
-            UALog.e(e, "Exception converting entity to schedule %s. Cancelling.", entry.schedule.scheduleId);
+            Logger.error(e, "Exception converting entity to schedule %s. Cancelling.", entry.schedule.scheduleId);
             cancel(Collections.singleton(entry.schedule.scheduleId));
         }
         return null;
@@ -1333,7 +1344,7 @@ public class AutomationEngine {
     @WorkerThread
     private void attemptExecution(@NonNull final FullSchedule entry) {
         if (entry.schedule.executionState != ScheduleState.WAITING_SCHEDULE_CONDITIONS) {
-            UALog.e("Unable to execute schedule when state is %s scheduleID: %s", entry.schedule.executionState, entry.schedule.scheduleId);
+            Logger.error("Unable to execute schedule when state is %s scheduleID: %s", entry.schedule.executionState, entry.schedule.scheduleId);
             return;
         }
 
@@ -1359,7 +1370,7 @@ public class AutomationEngine {
                         schedule = ScheduleConverters.convert(entry);
                         result = driver.onCheckExecutionReadiness(schedule);
                     } catch (Exception e) {
-                        UALog.e(e, "Unable to create schedule.");
+                        Logger.error(e, "Unable to create schedule.");
                         this.exception = e;
                     }
                 }
@@ -1376,36 +1387,36 @@ public class AutomationEngine {
         try {
             latch.await();
         } catch (InterruptedException ex) {
-            UALog.e(ex, "Failed to execute schedule. ");
+            Logger.error(ex, "Failed to execute schedule. ");
             Thread.currentThread().interrupt();
         }
 
         if (runnable.exception != null) {
-            UALog.e("Failed to check conditions. Deleting schedule: %s", entry.schedule.scheduleId);
+            Logger.error("Failed to check conditions. Deleting schedule: %s", entry.schedule.scheduleId);
             dao.delete(entry);
             notifyCancelledSchedule(Collections.singleton(entry));
         } else {
             int result = runnable.result == null ? AutomationDriver.READY_RESULT_NOT_READY : runnable.result;
             switch (result) {
                 case AutomationDriver.READY_RESULT_INVALIDATE:
-                    UALog.v("Schedule invalidated: %s", entry.schedule.scheduleId);
+                    Logger.verbose("Schedule invalidated: %s", entry.schedule.scheduleId);
                     updateExecutionState(entry, ScheduleState.PREPARING_SCHEDULE);
                     dao.update(entry);
                     prepareSchedules(Collections.singletonList(dao.getSchedule(entry.schedule.scheduleId)));
                     break;
 
                 case AutomationDriver.READY_RESULT_CONTINUE:
-                    UALog.v("Schedule executing: %s", entry.schedule.scheduleId);
+                    Logger.verbose("Schedule executing: %s", entry.schedule.scheduleId);
                     updateExecutionState(entry, ScheduleState.EXECUTING);
                     dao.update(entry);
                     break;
 
                 case AutomationDriver.READY_RESULT_NOT_READY:
-                    UALog.v("Schedule not ready for execution: %s", entry.schedule.scheduleId);
+                    Logger.verbose("Schedule not ready for execution: %s", entry.schedule.scheduleId);
                     break;
 
                 case AutomationDriver.READY_RESULT_SKIP:
-                    UALog.v("Schedule execution skipped: %s", entry.schedule.scheduleId);
+                    Logger.verbose("Schedule execution skipped: %s", entry.schedule.scheduleId);
                     updateExecutionState(entry, ScheduleState.IDLE);
                     dao.update(entry);
                     break;
@@ -1517,7 +1528,7 @@ public class AutomationEngine {
             return;
         }
 
-        UALog.v("Schedule finished: %s", entry.schedule.scheduleId);
+        Logger.verbose("Schedule finished: %s", entry.schedule.scheduleId);
 
         entry.schedule.count++;
         boolean isOverLimit = isOverLimit(entry);

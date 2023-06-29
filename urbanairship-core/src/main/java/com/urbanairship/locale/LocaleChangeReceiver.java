@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.urbanairship.Autopilot;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 
 import androidx.annotation.NonNull;
@@ -26,7 +26,7 @@ public class LocaleChangeReceiver extends BroadcastReceiver {
         }
 
         if (!UAirship.isTakingOff() && !UAirship.isFlying()) {
-            UALog.e("LocaleChangedReceiver - unable to receive intent, takeOff not called.");
+            Logger.error("LocaleChangedReceiver - unable to receive intent, takeOff not called.");
             return;
         }
 

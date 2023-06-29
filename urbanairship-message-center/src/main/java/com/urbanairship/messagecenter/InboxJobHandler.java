@@ -4,7 +4,7 @@ package com.urbanairship.messagecenter;
 
 import android.content.Context;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.PreferenceDataStore;
 import com.urbanairship.UAirship;
 import com.urbanairship.channel.AirshipChannel;
@@ -52,7 +52,7 @@ class InboxJobHandler {
      */
     static final String EXTRA_FORCEFULLY = "EXTRA_FORCEFULLY";
 
-    static final String LAST_MESSAGE_REFRESH_TIME = "com.urbanairship.messages.LAST_MESSAGE_REFRESH_TIME";
+    static final String LAST_MESSAGE_REFRESH_TIME = "com.urbanairship.user.LAST_MESSAGE_REFRESH_TIME";
 
     private static final String LAST_UPDATE_TIME = "com.urbanairship.user.LAST_UPDATE_TIME";
     private static final long USER_UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000; //24H
@@ -131,7 +131,7 @@ class InboxJobHandler {
      */
     private void onUpdateMessages() {
         if (!user.isUserCreated()) {
-            UALog.d("User has not been created, canceling messages update");
+            Logger.debug("User has not been created, canceling messages update");
             inbox.onUpdateMessagesFinished(false);
         } else {
             boolean success = this.updateMessages();
@@ -181,42 +181,41 @@ class InboxJobHandler {
      * @return <code>true</code> if messages were updated, otherwise <code>false</code>.
      */
     private boolean updateMessages() {
-        UALog.i("Refreshing inbox messages.");
+        Logger.info("Refreshing inbox messages.");
 
         String channelId = channel.getId();
         if (UAStringUtil.isEmpty(channelId)) {
-            UALog.v("The channel ID does not exist.");
+            Logger.verbose("The channel ID does not exist.");
             return false;
         }
 
-        UALog.v("Fetching inbox messages.");
+        Logger.verbose("Fetching inbox messages.");
 
         try {
-            Response<JsonList> response = inboxApiClient.fetchMessages(
-                    user, channelId, dataStore.getString(LAST_MESSAGE_REFRESH_TIME, null));
+            Response<JsonList> response = inboxApiClient.fetchMessages(user, channelId, dataStore.getLong(LAST_MESSAGE_REFRESH_TIME, 0));
 
-            UALog.v("Fetch inbox messages response: %s", response);
+            Logger.verbose("Fetch inbox messages response: %s", response);
 
             // 200-299
             if (response.isSuccessful()) {
                 JsonList result = response.getResult();
-                UALog.i("InboxJobHandler - Received %s inbox messages.", response.getResult().size());
+                Logger.info("InboxJobHandler - Received %s inbox messages.", response.getResult().size());
                 updateInbox(response.getResult());
-                dataStore.put(LAST_MESSAGE_REFRESH_TIME, response.getHeaders().get("Last-Modified"));
+                dataStore.put(LAST_MESSAGE_REFRESH_TIME, response.getLastModifiedTime());
                 return true;
             }
 
             // 304
             if (response.getStatus() == HttpURLConnection.HTTP_NOT_MODIFIED) {
-                UALog.d("Inbox messages already up-to-date. ");
+                Logger.debug("Inbox messages already up-to-date. ");
                 return true;
             }
 
-            UALog.d("Unable to update inbox messages %s.", response);
+            Logger.debug("Unable to update inbox messages %s.", response);
             return false;
 
         } catch (RequestException e) {
-            UALog.d(e, "Update Messages failed.");
+            Logger.debug(e, "Update Messages failed.");
             return false;
         }
     }
@@ -232,13 +231,13 @@ class InboxJobHandler {
 
         for (JsonValue message : serverMessages) {
             if (!message.isJsonMap()) {
-                UALog.e("InboxJobHandler - Invalid message payload: %s", message);
+                Logger.error("InboxJobHandler - Invalid message payload: %s", message);
                 continue;
             }
 
             String messageId = message.optMap().opt(Message.MESSAGE_ID_KEY).getString();
             if (messageId == null) {
-                UALog.e("InboxJobHandler - Invalid message payload, missing message ID: %s", message);
+                Logger.error("InboxJobHandler - Invalid message payload, missing message ID: %s", message);
                 continue;
             }
 
@@ -247,7 +246,7 @@ class InboxJobHandler {
             MessageEntity messageEntity = MessageEntity.createMessageFromPayload(messageId, message);
 
             if (messageEntity == null) {
-                UALog.e("InboxJobHandler - Message Entity is null");
+                Logger.error("InboxJobHandler - Message Entity is null");
                 continue;
             }
 
@@ -290,17 +289,17 @@ class InboxJobHandler {
             return;
         }
 
-        UALog.v("Found %s messages to delete.", idsToDelete.size());
+        Logger.verbose("Found %s messages to delete.", idsToDelete.size());
 
         try {
             Response<Void> response = inboxApiClient.syncDeletedMessageState(user, channelId, reportings);
-            UALog.v("Delete inbox messages response: %s", response);
+            Logger.verbose("Delete inbox messages response: %s", response);
 
             if (response.getStatus() == HttpURLConnection.HTTP_OK) {
                 messageDao.deleteMessages(idsToDelete);
             }
         } catch (RequestException e) {
-            UALog.d(e, "Deleted message state synchronize failed.");
+            Logger.debug(e, "Deleted message state synchronize failed.");
         }
     }
 
@@ -327,17 +326,17 @@ class InboxJobHandler {
             return;
         }
 
-        UALog.v("Found %s messages to mark read.", idsToUpdate.size());
+        Logger.verbose("Found %s messages to mark read.", idsToUpdate.size());
 
         try {
             Response<Void> response = inboxApiClient.syncReadMessageState(user, channelId, reportings);
-            UALog.v("Mark inbox messages read response: %s", response);
+            Logger.verbose("Mark inbox messages read response: %s", response);
 
             if (response.getStatus() == HttpURLConnection.HTTP_OK) {
                 messageDao.markMessagesReadOrigin(idsToUpdate);
             }
         } catch (RequestException e) {
-            UALog.d(e, "Read message state synchronize failed.");
+            Logger.debug(e, "Read message state synchronize failed.");
         }
     }
 
@@ -349,7 +348,7 @@ class InboxJobHandler {
     private boolean createUser() {
         String channelId = channel.getId();
         if (UAStringUtil.isEmpty(channelId)) {
-            UALog.d("No Channel. User will be created after channel registrations finishes.");
+            Logger.debug("No Channel. User will be created after channel registrations finishes.");
             return false;
         }
 
@@ -360,18 +359,18 @@ class InboxJobHandler {
             if (response.isSuccessful()) {
                 UserCredentials userCredentials = response.getResult();
 
-                UALog.i("InboxJobHandler - Created Rich Push user: %s", userCredentials.getUsername());
+                Logger.info("InboxJobHandler - Created Rich Push user: %s", userCredentials.getUsername());
                 dataStore.put(LAST_UPDATE_TIME, System.currentTimeMillis());
                 dataStore.remove(LAST_MESSAGE_REFRESH_TIME);
                 user.onCreated(userCredentials.getUsername(), userCredentials.getPassword(), channelId);
                 return true;
             }
 
-            UALog.d("Rich Push user creation failed: %s", response);
+            Logger.debug("Rich Push user creation failed: %s", response);
             return false;
 
         } catch (RequestException e) {
-            UALog.d(e, "User creation failed.");
+            Logger.debug(e, "User creation failed.");
             return false;
         }
     }
@@ -388,22 +387,22 @@ class InboxJobHandler {
         String channelId = channel.getId();
 
         if (UAStringUtil.isEmpty(channelId)) {
-            UALog.d("No Channel. Skipping Rich Push user update.");
+            Logger.debug("No Channel. Skipping Rich Push user update.");
             return false;
         }
 
         try {
             Response<Void> response = inboxApiClient.updateUser(user, channelId);
-            UALog.v("Update Rich Push user response: %s", response);
+            Logger.verbose("Update Rich Push user response: %s", response);
 
             int status = response.getStatus();
             if (status == HttpURLConnection.HTTP_OK) {
-                UALog.i("Rich Push user updated.");
+                Logger.info("Rich Push user updated.");
                 dataStore.put(LAST_UPDATE_TIME, System.currentTimeMillis());
                 user.onUpdated(channelId);
                 return true;
             } else if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                UALog.d("Re-creating Rich Push user.");
+                Logger.debug("Re-creating Rich Push user.");
                 dataStore.put(LAST_UPDATE_TIME, 0);
                 return createUser();
             }
@@ -412,7 +411,7 @@ class InboxJobHandler {
             return false;
 
         } catch (RequestException e) {
-            UALog.d(e, "User update failed.");
+            Logger.debug(e, "User update failed.");
             return false;
         }
     }

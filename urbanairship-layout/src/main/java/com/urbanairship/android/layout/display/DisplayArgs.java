@@ -2,16 +2,16 @@
 
 package com.urbanairship.android.layout.display;
 
+import com.urbanairship.android.layout.BasePayload;
+import com.urbanairship.android.layout.ThomasListener;
+import com.urbanairship.android.layout.util.ActionsRunner;
+import com.urbanairship.android.layout.util.Factory;
+import com.urbanairship.android.layout.util.ImageCache;
+import com.urbanairship.webkit.AirshipWebViewClient;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
-
-import com.urbanairship.android.layout.ThomasListener;
-import com.urbanairship.android.layout.info.LayoutInfo;
-import com.urbanairship.android.layout.util.Factory;
-import com.urbanairship.android.layout.util.ImageCache;
-import com.urbanairship.app.ActivityMonitor;
-import com.urbanairship.webkit.AirshipWebViewClient;
 
 /**
  * Display arguments.
@@ -19,44 +19,31 @@ import com.urbanairship.webkit.AirshipWebViewClient;
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class DisplayArgs {
-    @NonNull
-    private final LayoutInfo payload;
-    @NonNull
+    private final BasePayload payload;
     private final ThomasListener listener;
-    @NonNull
-    private final ActivityMonitor inAppActivityMonitor;
-    @Nullable
     private final Factory<AirshipWebViewClient> webViewClientFactory;
-    @Nullable
     private final ImageCache imageCache;
 
     public DisplayArgs(
-        @NonNull LayoutInfo payload,
-        @NonNull ThomasListener listener,
-        @NonNull ActivityMonitor inAppActivityMonitor,
+        @NonNull BasePayload payload,
+        @Nullable ThomasListener listener,
         @Nullable Factory<AirshipWebViewClient> webViewClientFactory,
         @Nullable ImageCache imageCache
     ) {
         this.payload = payload;
         this.listener = listener;
-        this.inAppActivityMonitor = inAppActivityMonitor;
         this.webViewClientFactory = webViewClientFactory;
         this.imageCache = imageCache;
     }
 
-    @NonNull
+    @Nullable
     public ThomasListener getListener() {
         return listener;
     }
 
     @NonNull
-    public LayoutInfo getPayload() {
+    public BasePayload getPayload() {
         return payload;
-    }
-
-    @NonNull
-    public ActivityMonitor getInAppActivityMonitor() {
-        return inAppActivityMonitor;
     }
 
     @Nullable

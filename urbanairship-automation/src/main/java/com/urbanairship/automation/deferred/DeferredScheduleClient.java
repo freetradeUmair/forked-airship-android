@@ -6,25 +6,26 @@ import android.net.Uri;
 
 import com.urbanairship.UAirship;
 import com.urbanairship.automation.TriggerContext;
+import com.urbanairship.automation.auth.AuthException;
+import com.urbanairship.automation.auth.AuthManager;
 import com.urbanairship.base.Supplier;
 import com.urbanairship.channel.AttributeMutation;
 import com.urbanairship.channel.TagGroupsMutation;
 import com.urbanairship.config.AirshipRuntimeConfig;
-import com.urbanairship.http.Request;
-import com.urbanairship.http.RequestAuth;
-import com.urbanairship.http.RequestBody;
 import com.urbanairship.http.RequestException;
-import com.urbanairship.http.RequestSession;
+import com.urbanairship.http.RequestFactory;
 import com.urbanairship.http.Response;
+import com.urbanairship.http.ResponseParser;
 import com.urbanairship.iam.InAppMessage;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonMap;
 import com.urbanairship.json.JsonValue;
 import com.urbanairship.util.UAHttpStatusUtil;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,7 +40,8 @@ import androidx.annotation.VisibleForTesting;
 public class DeferredScheduleClient {
 
     private final AirshipRuntimeConfig runtimeConfig;
-    private final RequestSession session;
+    private final AuthManager authManager;
+    private final RequestFactory requestFactory;
 
     private static final String PLATFORM_KEY = "platform";
     private static final String CHANNEL_ID_KEY = "channel_id";
@@ -64,17 +66,25 @@ public class DeferredScheduleClient {
      * Default constructor.
      *
      * @param runtimeConfig The runtime config.
+     * @param authManager The auth manager.
      */
-    public DeferredScheduleClient(@NonNull AirshipRuntimeConfig runtimeConfig) {
-        this(runtimeConfig, runtimeConfig.getRequestSession(), StateOverrides::defaultOverrides);
+    public DeferredScheduleClient(@NonNull AirshipRuntimeConfig runtimeConfig, @NonNull AuthManager authManager) {
+        this(runtimeConfig, authManager, RequestFactory.DEFAULT_REQUEST_FACTORY, new Supplier<StateOverrides>() {
+            @Override
+            public StateOverrides get() {
+                return StateOverrides.defaultOverrides();
+            }
+        });
     }
 
     @VisibleForTesting
     DeferredScheduleClient(@NonNull AirshipRuntimeConfig runtimeConfig,
-                           @NonNull RequestSession session,
+                           @NonNull AuthManager authManager,
+                           @NonNull RequestFactory requestFactory,
                            @NonNull Supplier<StateOverrides> stateOverridesSupplier) {
         this.runtimeConfig = runtimeConfig;
-        this.session = session;
+        this.authManager = authManager;
+        this.requestFactory = requestFactory;
         this.stateOverridesSupplier = stateOverridesSupplier;
     }
 
@@ -88,11 +98,12 @@ public class DeferredScheduleClient {
      * @param attributeOverrides Attribute overrides.
      * @return The deferred response.
      */
-    public Response<Result> performRequest(@Nullable Uri url,
+    public Response<Result> performRequest(@NonNull Uri url,
                                            @NonNull String channelId,
                                            @Nullable TriggerContext triggerContext,
-                                           @Nullable List<TagGroupsMutation> tagOverrides,
-                                           @Nullable List<AttributeMutation> attributeOverrides) throws RequestException {
+                                           @NonNull List<TagGroupsMutation> tagOverrides,
+                                           @NonNull List<AttributeMutation> attributeOverrides) throws RequestException, AuthException {
+        String token = authManager.getToken();
         JsonMap.Builder requestBodyBuilder = JsonMap.newBuilder()
                                                     .put(PLATFORM_KEY, runtimeConfig.getPlatform() == UAirship.AMAZON_PLATFORM ? PLATFORM_AMAZON : PLATFORM_ANDROID)
                                                     .put(CHANNEL_ID_KEY, channelId);
@@ -105,36 +116,46 @@ public class DeferredScheduleClient {
                                                        .build());
         }
 
-        if (tagOverrides != null && !tagOverrides.isEmpty()) {
+        if (!tagOverrides.isEmpty()) {
             requestBodyBuilder.put(TAG_OVERRIDES_KEY, JsonValue.wrapOpt(tagOverrides));
         }
 
-        if (attributeOverrides != null && !attributeOverrides.isEmpty()) {
+        if (!attributeOverrides.isEmpty()) {
             requestBodyBuilder.put(ATTRIBUTE_OVERRIDES_KEY, JsonValue.wrapOpt(attributeOverrides));
         }
 
         requestBodyBuilder.put(STATE_OVERRIDES_KEY, stateOverridesSupplier.get());
 
         JsonMap requestBody = requestBodyBuilder.build();
+        Response<Result> response = performRequest(url, token, requestBody);
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Accept", "application/vnd.urbanairship+json; version=3;");
+        // If token expired, try again with a new token
+        if (response.getStatus() == HttpsURLConnection.HTTP_UNAUTHORIZED) {
+            authManager.tokenExpired(token);
+            return performRequest(url, authManager.getToken(), requestBody);
+        } else {
+            return response;
+        }
+    }
 
-        Request request = new Request(
-                url,
-                "POST",
-                new RequestAuth.ChannelTokenAuth(channelId),
-                new RequestBody.Json(requestBody),
-                headers
-        );
+    private Response<Result> performRequest(@NonNull Uri url, @NonNull String token, @NonNull JsonMap requestBody) throws RequestException {
+        return requestFactory.createRequest()
+                             .setOperation("POST", url)
+                             .setAirshipUserAgent(runtimeConfig)
+                             .setHeader("Authorization", "Bearer " + token)
+                             .setAirshipJsonAcceptsHeader()
+                             .setRequestBody(requestBody)
+                             .execute(new ResponseParser<Result>() {
+                                 @Override
+                                 public Result parseResponse(int status, @Nullable Map<String, List<String>> headers, @Nullable String responseBody) throws Exception {
+                                     if (UAHttpStatusUtil.inSuccessRange(status)) {
+                                         return parseResponseBody(responseBody);
+                                     } else {
+                                         return null;
+                                     }
+                                 }
+                             });
 
-        return session.execute(request, (status, responseHeaders, responseBody) -> {
-            if (UAHttpStatusUtil.inSuccessRange(status)) {
-                return parseResponseBody(responseBody);
-            } else {
-                return null;
-            }
-        });
     }
 
     private Result parseResponseBody(String responseBody) throws JsonException {

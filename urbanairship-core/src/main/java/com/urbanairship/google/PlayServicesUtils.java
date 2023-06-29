@@ -7,7 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import androidx.annotation.NonNull;
 
@@ -55,7 +55,7 @@ public class PlayServicesUtils {
         try {
             errorCode = GooglePlayServicesUtilWrapper.isGooglePlayServicesAvailable(context);
         } catch (IllegalStateException e) {
-            UALog.e(e, "Google Play services developer error.");
+            Logger.error(e, "Google Play services developer error.");
             return;
         }
 
@@ -64,14 +64,14 @@ public class PlayServicesUtils {
         }
 
         if (GooglePlayServicesUtilWrapper.isUserRecoverableError(errorCode)) {
-            UALog.d("Launching Play Services Activity to resolve error.");
+            Logger.debug("Launching Play Services Activity to resolve error.");
             try {
                 context.startActivity(new Intent(context, PlayServicesErrorActivity.class));
             } catch (ActivityNotFoundException e) {
-                UALog.e(e);
+                Logger.error(e);
             }
         } else {
-            UALog.i("Error %s is not user recoverable.", errorCode);
+            Logger.info("Error %s is not user recoverable.", errorCode);
         }
     }
 

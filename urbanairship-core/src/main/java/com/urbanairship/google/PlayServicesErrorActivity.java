@@ -9,7 +9,7 @@ import android.os.Bundle;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 import com.urbanairship.UAirship;
 
 import androidx.annotation.NonNull;
@@ -49,10 +49,10 @@ public class PlayServicesErrorActivity extends FragmentActivity {
 
         if (requestCode == REQUEST_RESOLVE_ERROR) {
             if (resultCode == RESULT_OK) {
-                UALog.d("Google Play services resolution received result ok.");
+                Logger.debug("Google Play services resolution received result ok.");
                 checkPlayServices();
             } else {
-                UALog.d("Google Play services resolution canceled.");
+                Logger.debug("Google Play services resolution canceled.");
                 finish();
             }
         }
@@ -86,17 +86,17 @@ public class PlayServicesErrorActivity extends FragmentActivity {
      * dialog if it is, otherwise it will finish the activity.
      */
     private void checkPlayServices() {
-        UALog.i("Checking Google Play services.");
+        Logger.info("Checking Google Play services.");
 
         int error = GooglePlayServicesUtilWrapper.isGooglePlayServicesAvailable(this);
         if (error == ConnectionResult.SUCCESS) {
-            UALog.d("Google Play services available!");
+            Logger.debug("Google Play services available!");
             finish();
         } else if (GooglePlayServicesUtilWrapper.isUserRecoverableError(error)) {
-            UALog.d("Google Play services recoverable error: %s", error);
+            Logger.debug("Google Play services recoverable error: %s", error);
             ErrorDialogFragment.createInstance(error).show(getSupportFragmentManager(), DIALOG_TAG);
         } else {
-            UALog.e("Unrecoverable Google Play services error: %s", error);
+            Logger.error("Unrecoverable Google Play services error: %s", error);
             finish();
         }
     }

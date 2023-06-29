@@ -2,7 +2,7 @@
 
 package com.urbanairship.analytics.location;
 
-import com.urbanairship.UALog;
+import com.urbanairship.Logger;
 
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
@@ -92,13 +92,13 @@ public class ProximityRegion {
         }
 
         if (!RegionEvent.regionEventLatitudeIsValid(latitude)) {
-            UALog.e("The latitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LATITUDE, RegionEvent.MAX_LATITUDE);
+            Logger.error("The latitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LATITUDE, RegionEvent.MAX_LATITUDE);
             this.latitude = null;
             return;
         }
 
         if (!RegionEvent.regionEventLongitudeIsValid(longitude)) {
-            UALog.e("The longitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LONGITUDE, RegionEvent.MAX_LONGITUDE);
+            Logger.error("The longitude must be greater than or equal to %s and less than or equal to %s degrees.", RegionEvent.MIN_LONGITUDE, RegionEvent.MAX_LONGITUDE);
             this.longitude = null;
             return;
         }
@@ -119,7 +119,7 @@ public class ProximityRegion {
         }
 
         if (rssi > MAX_RSSI || rssi < MIN_RSSI) {
-            UALog.e("The rssi must be greater than or equal to %s and less than or equal to %s dBm.", MIN_RSSI, MAX_RSSI);
+            Logger.error("The rssi must be greater than or equal to %s and less than or equal to %s dBm.", MIN_RSSI, MAX_RSSI);
             this.rssi = null;
             return;
         }
@@ -193,23 +193,23 @@ public class ProximityRegion {
     public boolean isValid() {
         //noinspection ConstantConditions
         if (proximityId == null) {
-            UALog.e("The proximity ID must not be null.");
+            Logger.error("The proximity ID must not be null.");
             return false;
         }
 
         if (!RegionEvent.regionEventCharacterCountIsValid(proximityId)) {
-            UALog.e("The proximity ID must not be greater than %s or less than %s characters in length.", RegionEvent.MAX_CHARACTER_LENGTH, 1);
+            Logger.error("The proximity ID must not be greater than %s or less than %s characters in length.", RegionEvent.MAX_CHARACTER_LENGTH, 1);
             return false;
         }
 
         if (major > MAX_MAJOR_MINOR_VALUE || major < 0) {
-            UALog.e("The major must not be greater than " + MAX_MAJOR_MINOR_VALUE +
+            Logger.error("The major must not be greater than " + MAX_MAJOR_MINOR_VALUE +
                     " or less than " + 0 + ".");
             return false;
         }
 
         if (minor > MAX_MAJOR_MINOR_VALUE || minor < 0) {
-            UALog.e("The minor must not be greater than %s or less than %s.", MAX_MAJOR_MINOR_VALUE, 0);
+            Logger.error("The minor must not be greater than %s or less than %s.", MAX_MAJOR_MINOR_VALUE, 0);
             return false;
         }
 

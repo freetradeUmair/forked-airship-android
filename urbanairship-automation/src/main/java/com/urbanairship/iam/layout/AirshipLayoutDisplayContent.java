@@ -2,11 +2,13 @@
 
 package com.urbanairship.iam.layout;
 
+import com.urbanairship.android.layout.BasePayload;
 import com.urbanairship.android.layout.Thomas;
-import com.urbanairship.android.layout.info.LayoutInfo;
 import com.urbanairship.iam.DisplayContent;
 import com.urbanairship.json.JsonException;
 import com.urbanairship.json.JsonValue;
+
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
@@ -19,10 +21,10 @@ public class AirshipLayoutDisplayContent implements DisplayContent {
 
     private static final String LAYOUT_KEY = "layout";
 
-    private final JsonValue json;
-    private final LayoutInfo payload;
+    private JsonValue json;
+    private BasePayload payload;
 
-    private AirshipLayoutDisplayContent(@NonNull JsonValue json,  @NonNull LayoutInfo basePayload) {
+    private AirshipLayoutDisplayContent(@NonNull JsonValue json,  @NonNull BasePayload basePayload) {
         this.json = json;
         this.payload = basePayload;
     }
@@ -35,7 +37,7 @@ public class AirshipLayoutDisplayContent implements DisplayContent {
      */
     @NonNull
     public static AirshipLayoutDisplayContent fromJson(@NonNull JsonValue value) throws JsonException {
-        LayoutInfo basePayload = new LayoutInfo(value.optMap().opt(LAYOUT_KEY).optMap());
+        BasePayload basePayload = BasePayload.fromJson(value.optMap().opt(LAYOUT_KEY).optMap());
         if (!Thomas.isValid(basePayload)) {
             throw new JsonException("Invalid payload.");
         }
@@ -54,7 +56,7 @@ public class AirshipLayoutDisplayContent implements DisplayContent {
      * @hide
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public LayoutInfo getPayload() {
+    public BasePayload getPayload() {
         return this.payload;
     }
 

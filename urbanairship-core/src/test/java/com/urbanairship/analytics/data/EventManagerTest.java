@@ -140,14 +140,16 @@ public class EventManagerTest extends BaseTestCase {
         when(eventResponse.getMinBatchInterval()).thenReturn(100);
 
         // Return the response
-        when(mockClient.sendEvents("some channel", eventPayloads, headers))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_OK, eventResponse));
+        when(mockClient.sendEvents(eventPayloads, headers))
+                .thenReturn(new Response.Builder<EventResponse>(HttpURLConnection.HTTP_OK)
+                        .setResult(eventResponse)
+                        .build());
 
         // Start the upload process
-        assertTrue(eventManager.uploadEvents("some channel", headers));
+        assertTrue(eventManager.uploadEvents(headers));
 
         // Check mockClients receives the events
-        verify(mockClient).sendEvents("some channel", eventPayloads, headers);
+        verify(mockClient).sendEvents(eventPayloads, headers);
 
         // Check data manager deletes events
         verify(mockEventDao).deleteBatch(events);
@@ -178,7 +180,7 @@ public class EventManagerTest extends BaseTestCase {
         when(mockEventDao.databaseSize()).thenReturn(100000);
         when(mockEventDao.count()).thenReturn(1000);
 
-        eventManager.uploadEvents("some channel", Collections.<String, String>emptyMap());
+        eventManager.uploadEvents(Collections.<String, String>emptyMap());
 
         // Verify it only asked for 500
         verify(mockEventDao).getBatch(500);
@@ -205,14 +207,15 @@ public class EventManagerTest extends BaseTestCase {
 
         EventResponse eventResponse = mock(EventResponse.class);
 
-        when(mockClient.sendEvents("some channel", eventPayloads, headers))
-                .thenReturn(new Response<>(HttpURLConnection.HTTP_BAD_REQUEST, eventResponse));
+        when(mockClient.sendEvents(eventPayloads, headers))
+                .thenReturn(new Response.Builder<EventResponse>(HttpURLConnection.HTTP_BAD_REQUEST)
+                        .setResult(eventResponse)
+                        .build());
 
-
-        assertFalse(eventManager.uploadEvents("some channel", headers));
+        assertFalse(eventManager.uploadEvents(headers));
 
         // Check mockClient receives the events
-        verify(mockClient).sendEvents("some channel", eventPayloads, headers);
+        verify(mockClient).sendEvents(eventPayloads, headers);
 
         // If it fails, it should skip deleting events
         verify(mockEventDao, never()).deleteBatch(events);

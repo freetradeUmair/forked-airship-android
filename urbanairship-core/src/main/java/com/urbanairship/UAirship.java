@@ -19,16 +19,16 @@ import com.urbanairship.actions.ActionRegistry;
 import com.urbanairship.actions.DeepLinkListener;
 import com.urbanairship.analytics.Analytics;
 import com.urbanairship.app.GlobalActivityMonitor;
-import com.urbanairship.audience.AudienceOverridesProvider;
 import com.urbanairship.base.Supplier;
 import com.urbanairship.channel.AirshipChannel;
+import com.urbanairship.channel.NamedUser;
 import com.urbanairship.config.AirshipRuntimeConfig;
+import com.urbanairship.config.AirshipUrlConfig;
 import com.urbanairship.config.RemoteAirshipUrlConfigProvider;
 import com.urbanairship.contacts.Contact;
-import com.urbanairship.experiment.ExperimentManager;
-import com.urbanairship.http.DefaultRequestSession;
 import com.urbanairship.images.DefaultImageLoader;
 import com.urbanairship.images.ImageLoader;
+import com.urbanairship.js.UrlAllowList;
 import com.urbanairship.locale.LocaleManager;
 import com.urbanairship.modules.Module;
 import com.urbanairship.modules.Modules;
@@ -145,6 +145,7 @@ public class UAirship {
     RemoteData remoteData;
     RemoteConfigManager remoteConfigManager;
     ChannelCapture channelCapture;
+    NamedUser namedUser;
     ImageLoader imageLoader;
     AccengageNotificationHandler accengageNotificationHandler;
     AirshipRuntimeConfig runtimeConfig;
@@ -152,7 +153,6 @@ public class UAirship {
     PrivacyManager privacyManager;
     Contact contact;
     PermissionsManager permissionsManager;
-    ExperimentManager experimentManager;
 
     /**
      * Constructs an instance of UAirship.
@@ -346,7 +346,7 @@ public class UAirship {
         }
 
         if (Looper.myLooper() == null || Looper.getMainLooper() != Looper.myLooper()) {
-            UALog.e("takeOff() must be called on the main thread!");
+            Logger.error("takeOff() must be called on the main thread!");
         }
 
         isMainProcess = ProcessUtils.isMainProcess(application);
@@ -359,17 +359,17 @@ public class UAirship {
                 sb.append(element.toString());
             }
 
-            UALog.d("Takeoff stack trace: %s", sb.toString());
+            Logger.debug("Takeoff stack trace: %s", sb.toString());
         }
 
         synchronized (airshipLock) {
             // airships only take off once!!
             if (isFlying || isTakingOff) {
-                UALog.e("You can only call takeOff() once.");
+                Logger.error("You can only call takeOff() once.");
                 return;
             }
 
-            UALog.i("Airship taking off!");
+            Logger.info("Airship taking off!");
 
             isTakingOff = true;
 
@@ -401,13 +401,13 @@ public class UAirship {
 
         options.validate();
 
-        UALog.setLogLevel(options.logLevel);
-        UALog.setTag(UAirship.getAppName() + " - " + UALog.DEFAULT_TAG);
+        Logger.setLogLevel(options.logLevel);
+        Logger.setTag(UAirship.getAppName() + " - " + Logger.DEFAULT_TAG);
 
-        UALog.i("Airship taking off!");
-        UALog.i("Airship log level: %s", options.logLevel);
-        UALog.i("UA Version: %s / App key = %s Production = %s", getVersion(), options.appKey, options.inProduction);
-        UALog.v(BuildConfig.SDK_VERSION);
+        Logger.info("Airship taking off!");
+        Logger.info("Airship log level: %s", options.logLevel);
+        Logger.info("UA Version: %s / App key = %s Production = %s", getVersion(), options.appKey, options.inProduction);
+        Logger.verbose(BuildConfig.SDK_VERSION);
 
         sharedAirship = new UAirship(options);
 
@@ -421,7 +421,7 @@ public class UAirship {
             // Initialize the modules
             sharedAirship.init();
 
-            UALog.i("Airship ready!");
+            Logger.info("Airship ready!");
 
             // Ready callback for setup
             if (readyCallback != null) {
@@ -538,7 +538,7 @@ public class UAirship {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0);
         } catch (PackageManager.NameNotFoundException e) {
-            UALog.w(e, "UAirship - Unable to get package info.");
+            Logger.warn(e, "UAirship - Unable to get package info.");
             return null;
         }
     }
@@ -709,15 +709,19 @@ public class UAirship {
 
         Supplier<PushProviders> pushProviders = PushProviders.lazyLoader(application, airshipConfigOptions);
 
-        AudienceOverridesProvider audienceOverridesProvider = new AudienceOverridesProvider();
         DeferredPlatformProvider platformProvider = new DeferredPlatformProvider(getApplicationContext(), preferenceDataStore, privacyManager, pushProviders);
-        DefaultRequestSession requestSession = new DefaultRequestSession(airshipConfigOptions, platformProvider.getPlatform());
-
         RemoteAirshipUrlConfigProvider remoteAirshipUrlConfigProvider = new RemoteAirshipUrlConfigProvider(airshipConfigOptions, preferenceDataStore);
-        this.runtimeConfig = new AirshipRuntimeConfig(platformProvider, airshipConfigOptions, remoteAirshipUrlConfigProvider, requestSession);
+        this.runtimeConfig = new AirshipRuntimeConfig(platformProvider, airshipConfigOptions, remoteAirshipUrlConfigProvider);
+        remoteAirshipUrlConfigProvider.addUrlConfigListener(new AirshipUrlConfig.Listener() {
+            @Override
+            public void onUrlConfigUpdated() {
+                for (AirshipComponent component : components) {
+                    component.onUrlConfigUpdated();
+                }
+            }
+        });
 
-        this.channel = new AirshipChannel(application, preferenceDataStore, runtimeConfig, privacyManager, localeManager, audienceOverridesProvider);
-        requestSession.setChannelAuthTokenProvider(this.channel.getAuthTokenProvider());
+        this.channel = new AirshipChannel(application, preferenceDataStore, runtimeConfig, privacyManager, localeManager);
 
         if (channel.getId() == null && "huawei".equalsIgnoreCase(Build.MANUFACTURER)) {
             remoteAirshipUrlConfigProvider.disableFallbackUrls();
@@ -743,22 +747,19 @@ public class UAirship {
         this.channelCapture = new ChannelCapture(application, airshipConfigOptions, channel, preferenceDataStore, GlobalActivityMonitor.shared(application));
         components.add(this.channelCapture);
 
-        this.contact = new Contact(application, preferenceDataStore, runtimeConfig, privacyManager, channel, localeManager, audienceOverridesProvider);
-        components.add(this.contact);
-        requestSession.setContactAuthTokenProvider(this.contact.getAuthTokenProvider());
-
-        this.remoteData = new RemoteData(application, runtimeConfig, preferenceDataStore, privacyManager, localeManager,  pushManager, pushProviders, contact);
+        this.remoteData = new RemoteData(application, preferenceDataStore, runtimeConfig, privacyManager, pushManager, localeManager, pushProviders);
         components.add(this.remoteData);
 
         this.remoteConfigManager = new RemoteConfigManager(application, preferenceDataStore, runtimeConfig, privacyManager, remoteData);
         this.remoteConfigManager.addRemoteAirshipConfigListener(remoteAirshipUrlConfigProvider);
         components.add(this.remoteConfigManager);
 
+        this.contact = new Contact(application, preferenceDataStore, runtimeConfig, privacyManager, channel);
+        components.add(this.contact);
 
-        // Experiments
-        this.experimentManager = new ExperimentManager(application, preferenceDataStore, remoteData,
-                channel::getId, contact::getStableContactId);
-        components.add(this.experimentManager);
+        //noinspection deprecation
+        this.namedUser = new NamedUser(application, preferenceDataStore, contact);
+        components.add(this.namedUser);
 
         // Debug
         Module debugModule = Modules.debug(application, preferenceDataStore);
@@ -780,7 +781,7 @@ public class UAirship {
 
         // Automation
         Module automationModule = Modules.automation(application, preferenceDataStore, runtimeConfig,
-                privacyManager, channel, pushManager, analytics, remoteData, audienceOverridesProvider);
+                privacyManager, channel, pushManager, analytics, remoteData, contact);
         processModule(automationModule);
 
         // Ad Id
@@ -794,16 +795,6 @@ public class UAirship {
         // Preference Center
         Module preferenceCenter = Modules.preferenceCenter(application, preferenceDataStore, privacyManager, remoteData);
         processModule(preferenceCenter);
-
-        // Live Updates
-        Module liveUpdateManager = Modules.liveUpdateManager(application, preferenceDataStore, runtimeConfig, privacyManager, channel, pushManager);
-        processModule(liveUpdateManager);
-
-        remoteAirshipUrlConfigProvider.addUrlConfigListener(() -> {
-            for (AirshipComponent component : components) {
-                component.onUrlConfigUpdated();
-            }
-        });
 
         for (AirshipComponent component : components) {
             component.init();
@@ -837,6 +828,18 @@ public class UAirship {
     @NonNull
     public AirshipConfigOptions getAirshipConfigOptions() {
         return airshipConfigOptions;
+    }
+
+    /**
+     * Returns the {@link com.urbanairship.channel.NamedUser} instance.
+     *
+     * @return The {@link com.urbanairship.channel.NamedUser} instance.
+     * @deprecated Use {@link Contact} instead.
+     */
+    @NonNull
+    @Deprecated
+    public NamedUser getNamedUser() {
+        return namedUser;
     }
 
     /**
@@ -1061,13 +1064,7 @@ public class UAirship {
                 }
             }
 
-            DeepLinkListener deepLinkListener = getDeepLinkListener();
-            if (deepLinkListener != null && deepLinkListener.onDeepLink(deepLink)) {
-                return true;
-            }
-
-            UALog.d("Airship deep link not handled: %s", deepLink);
-
+            Logger.debug("Airship deep link not handled: %s", deepLink);
             return true;
         } else {
             DeepLinkListener deepLinkListener = getDeepLinkListener();

@@ -3,7 +3,6 @@
 package com.urbanairship.images;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
 import java.util.Map;
@@ -56,13 +55,13 @@ public class DefaultImageLoader implements ImageLoader {
 
         ImageRequest request = new ImageRequest(context, imageCache, imageView, imageRequestOptions) {
             @Override
-            void onFinish(@Nullable ImageView imageView, boolean success) {
+            void onFinish(ImageView imageView) {
                 if (imageView != null) {
                     requestMap.remove(imageView);
 
                     ImageLoadedCallback callback = imageRequestOptions.getCallback();
                     if (callback != null) {
-                        callback.onImageLoaded(success);
+                        callback.onImageLoaded();
                     }
                 }
             }
