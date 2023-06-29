@@ -1,14 +1,6 @@
 plugins {
-    id 'airship-module'
-    id 'com.android.library'
-    id 'maven-publish'
-}
-
-repositories {
-    gradlePluginPortal()
-    google()
-    mavenCentral()
-    maven { url "https://jitpack.io" }
+    id("airship-module")
+    id("maven-publish")
 }
 
 description = "Airship Android SDK FCM plugin"
