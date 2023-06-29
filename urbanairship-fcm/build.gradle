@@ -23,6 +23,8 @@ android {
     namespace 'com.urbanairship.push.fcm'
 }
 
+
+
 afterEvaluate {
     publishing {
         publications {
